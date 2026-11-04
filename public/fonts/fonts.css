@@ -1,0 +1,5 @@
+/* Bundled Google Fonts (SIL Open Font License 1.1), latin subset, variable weights.
+   Served locally so the TV page never calls out to the internet. */
+@font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 700 800; font-display: swap; src: url(BigShouldersDisplay.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(Archivo.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(JetBrainsMono.woff2) format('woff2'); }

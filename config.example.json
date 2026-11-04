@@ -1,0 +1,49 @@
+{
+  "t8Host": "192.168.1.50",
+  "t8Port": 9529,
+  "port": 8080,
+  "pollMs": 1000,
+  "device": {
+    "brand": "Eversolo",
+    "type": "transport"
+  },
+  "sources": {},
+  "chain": [
+    {
+      "model": "DAC",
+      "brand": "",
+      "type": "edit me at /setup"
+    },
+    {
+      "model": "Amp",
+      "brand": "",
+      "type": ""
+    },
+    {
+      "model": "Speakers",
+      "brand": "",
+      "type": ""
+    }
+  ],
+  "dacWindow": {
+    "title": "",
+    "items": []
+  },
+  "display": {
+    "palette": "cyber",
+    "eqLabel": "EQ",
+    "eqNote": "active",
+    "nightAfterIdleMinutes": 10,
+    "showStats": false,
+    "showChain": false,
+    "animatePath": true,
+    "showEq": true,
+    "beadShape": "glow",
+    "beadColor": "format",
+    "beadSize": "medium",
+    "beadSpeed": "normal",
+    "showDac": false,
+    "showClock": true,
+    "customColor": "#ff2bd6"
+  }
+}

@@ -1,0 +1,17 @@
+name: Idea or suggestion
+description: Something you'd like the HUD to do.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: One rule shapes every idea here. Everything on screen must be real, either reported by the player or typed in by you. No decorative meters or invented numbers.
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help you?

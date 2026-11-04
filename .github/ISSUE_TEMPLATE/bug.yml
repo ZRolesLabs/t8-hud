@@ -1,0 +1,49 @@
+name: Bug report
+description: Something on the HUD or the setup page is wrong or broken.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping. The more of this you fill in, the faster it gets fixed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      placeholder: e.g. Playing Qobuz Connect, the cover is blank and Source says LOCAL.
+    validations:
+      required: true
+  - type: input
+    id: player
+    attributes:
+      label: Eversolo player and firmware
+      description: On the player, Settings → About.
+      placeholder: e.g. T8, firmware v1.6.15
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: What was playing from?
+      placeholder: e.g. local SSD, TIDAL in the T8 app, TIDAL Connect, Spotify Connect, Roon
+  - type: input
+    id: screen
+    attributes:
+      label: Screen and browser
+      placeholder: e.g. Google TV with TV Bro, iPad Safari
+  - type: input
+    id: computer
+    attributes:
+      label: Computer running the HUD, and HUD version
+      description: The version is in the first line the HUD prints when it starts (e.g. "T8 HUD v1.0.0 running.").
+      placeholder: e.g. Raspberry Pi 5, v1.0.0
+  - type: textarea
+    id: raw
+    attributes:
+      label: Raw T8 answer (very helpful)
+      description: While the track is playing, open http://<computer-IP>:8080/api/raw and paste everything here. It contains no passwords. You can blank out the device name if you like.
+      render: json
+  - type: textarea
+    id: log
+    attributes:
+      label: Anything the HUD printed (optional)
+      render: text

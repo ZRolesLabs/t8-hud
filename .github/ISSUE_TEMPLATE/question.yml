@@ -1,0 +1,23 @@
+name: Question
+description: Stuck installing, or not sure how something works?
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: Have a quick look at the README's Troubleshooting section first; the common ones (VPN apps, sleep, T8 not found) are there.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Your setup
+      placeholder: e.g. T8, Windows 11 mini PC, Google TV with TV Bro
+  - type: textarea
+    id: output
+    attributes:
+      label: Exact error or output, if any
+      render: text

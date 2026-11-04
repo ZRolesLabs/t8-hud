@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T8 HUD</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage-frame">
+  <div class="stage" id="stage">
+    <div class="backdrop" aria-hidden="true"><canvas id="bg" width="48" height="27"></canvas></div>
+    <div class="hud" id="hud">
+      <div class="topbar">
+        <div class="dev"><span><span class="live-dot" id="dot"></span><span id="devname">Connecting…</span></span><span id="devmeta"></span><span id="src"></span></div>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+
+      <div class="main">
+        <div class="art" id="artbox"><img id="art" alt=""><div class="art-empty" id="artempty">No cover art</div></div>
+        <div class="raw" id="raw"><h3>Raw getState fields</h3><dl id="rawdl"></dl></div>
+        <div class="info">
+          <div class="prov" id="prov"></div>
+          <h1 class="title" id="title"></h1>
+          <div>
+            <div class="artist" id="artist"></div>
+            <div class="album" id="album"></div>
+          </div>
+          <div class="progress"><span id="pos">0:00</span><div class="bar"><i id="bar"></i></div><span id="dur">0:00</span></div>
+          <div class="tele">
+            <div class="badges" id="badges"></div>
+            <div class="decoder"><span id="ring"></span><span id="moved"></span></div>
+            <div class="flags" id="flags"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chain" id="chain">
+        <canvas id="pulse"></canvas>
+      </div>
+
+      <div class="foot">
+        <div class="stats" id="stats"></div>
+        <div class="dacwin" id="dac" hidden></div>
+      </div>
+    </div>
+
+    <div class="idle" id="idle"><div class="idle-t">Nothing playing</div><div class="idle-s" id="idle-s"></div></div>
+    <div class="night" aria-hidden="true"><div class="drift" id="drift"><div class="t" id="n-title"></div><div class="r" id="n-rate"></div></div></div>
+    <div class="offline" id="offline" hidden>T8 asleep or offline · waiting for it</div>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

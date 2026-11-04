@@ -1,0 +1,14 @@
+{
+  "name": "t8-hud",
+  "version": "1.0.1",
+  "description": "A zero-cloud, read-only now-playing telemetry display for the Eversolo T8, built for a 4K TV browser.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "test": "node test/normalize.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": true
+}

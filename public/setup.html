@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T8 HUD Setup</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root {
+  --ink: #0c0714; --ink-2: #170e26; --ink-3: #21163a; --rule: #2e2245;
+  --fg: #f3eeff; --fg-2: #ab9fcc; --fg-3: #6e618d;
+  --accent: #c86bff; --ok: #5cf2c5; --warn: #ff4f8b;
+  --f-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ink); color: var(--fg); font: 400 16px/1.45 var(--f-body); }
+main { max-width: 760px; margin: 0 auto; padding: 28px 16px 120px; }
+h1 { font: 800 40px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px; }
+.lead { color: var(--fg-2); margin: 0 0 24px; }
+section { background: var(--ink-2); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+h2 { font: 700 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin: 0 0 6px; }
+.hint { color: var(--fg-3); font-size: 14px; margin: 0 0 14px; }
+label { display: grid; gap: 4px; font: 500 12px/1 var(--f-mono); color: var(--fg-2); letter-spacing: .04em; text-transform: uppercase; }
+input[type=text], input[type=number] { width: 100%; background: var(--ink); color: var(--fg); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 11px; font: 400 16px/1.2 var(--f-body); }
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+button { font: 600 14px/1 var(--f-body); color: var(--fg); background: var(--ink-3); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 14px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #12081f; }
+button.icon { padding: 8px 10px; min-width: 38px; }
+.row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr 1fr auto; align-items: end; margin-bottom: 10px; }
+.row .ctl { display: flex; gap: 6px; }
+.two { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.status { display: flex; gap: 10px; align-items: center; font: 500 14px/1.3 var(--f-mono); color: var(--fg-2); margin-bottom: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg-3); flex: none; }
+.dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.found { display: grid; gap: 6px; margin-top: 10px; }
+.src-key { font: 600 13px/1 var(--f-mono); color: var(--accent); align-self: center; padding-bottom: 12px; }
+.pal { display: flex; gap: 8px; flex-wrap: wrap; }
+.pal button[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.check { display: flex; gap: 8px; align-items: center; text-transform: none; font: 400 15px/1.2 var(--f-body); color: var(--fg); letter-spacing: 0; }
+.preview { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center; padding: 14px; background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; margin-top: 6px; }
+.pn { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.pn b { font: 700 15px/1 var(--f-display); letter-spacing: .04em; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 4px; background: var(--ink-2); }
+.pn.hw b { border-color: var(--accent); color: var(--accent); }
+.pn.eq b { border-color: var(--ok); color: var(--ok); }
+.pn.link b { border-color: rgba(243,238,255,.7); color: var(--fg); }
+#dac .row { grid-template-columns: 1fr 1.4fr auto; }
+.row.link { border-left: 3px solid var(--accent); padding-left: 10px; }
+#chain .row { grid-template-columns: 1fr 1fr 1fr 1.2fr auto; }
+select { width: 100%; background: var(--ink); color: var(--fg); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 8px; font: 400 15px/1.2 var(--f-body); }
+.branch { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center; padding-top: 6px; }
+.pn small { font: 500 11px/1 var(--f-mono); color: var(--fg-3); }
+.arrow { color: var(--fg-3); font: 500 12px/1 var(--f-mono); padding: 0 2px 14px; }
+.legend { font: 500 12px/1 var(--f-mono); color: var(--fg-3); margin-top: 8px; }
+.legend em { font-style: normal; color: var(--accent); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(12,7,20,.92); border-top: 1px solid var(--rule); padding: 12px 16px; backdrop-filter: blur(6px); }
+.bar .in { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.msg { font: 500 14px/1.3 var(--f-mono); color: var(--fg-2); }
+.msg.ok { color: var(--ok); } .msg.err { color: var(--warn); }
+@media (max-width: 560px) {
+  .row, #chain .row { grid-template-columns: 1fr 1fr; }
+  .row .ctl { grid-column: 1 / -1; justify-content: flex-end; }
+  .two { grid-template-columns: 1fr; }
+}
+[hidden] { display: none !important; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+details.extras { margin-top: 8px; border: 1px solid var(--rule); border-radius: 10px; padding: 12px 16px; }
+details.extras > summary { cursor: pointer; font-weight: 600; color: var(--fg-2); }
+details.extras[open] > summary { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>T8 HUD setup</h1>
+  <p class="lead">Changes here only affect what the TV shows. Nothing is ever sent to the T8. Press <b>Save</b> and every screen updates within a second.</p>
+
+  <section id="tvbox">
+    <h2>Open this on your TV</h2>
+    <p class="hint">Type this into your TV's (or tablet's) web browser. It's this computer's address on your home network.</p>
+    <div id="tvurl" style="font:700 28px/1.2 var(--f-mono);color:var(--accent);word-break:break-all"></div>
+  </section>
+
+  <section>
+    <h2>Your T8</h2>
+    <div class="status"><span class="dot" id="dot"></span><span id="status">Checking…</span></div>
+    <div class="two">
+      <label>T8 address<input type="text" id="t8Host" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+      <div style="align-self:end"><button id="find">Find my T8</button></div>
+    </div>
+    <div class="found" id="found"></div>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <p class="hint">The T8 reports a short code for where the music comes from, such as LOCAL. Give each code a friendlier name for the top bar. Codes appear here once the T8 has played from them.</p>
+    <div id="sources"></div>
+    <div class="two"><label>Add a code by hand<input type="text" id="newSrc" placeholder="e.g. TIDAL" maxlength="40"></label><div style="align-self:end"><button id="addSrc">+ Add code</button></div></div>
+  </section>
+
+  <section>
+    <h2>EQ</h2>
+    <p class="hint">The T8 only reports whether its EQ is on or off, nothing about the EQ settings. The chip shows that: “EQ on” or “EQ off”. You can rename “EQ” and add a short note of your own.</p>
+    <label class="check" style="margin-bottom:12px"><input type="checkbox" id="eqOn"> Show the EQ chip</label>
+    <div class="two" id="eqFields">
+      <label>Name<input type="text" id="eqLabel" maxlength="40"></label>
+      <label>Note<input type="text" id="eqNote" maxlength="40"></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Look</h2>
+    <div class="pal" id="pal"></div>
+    <div id="customRow" class="two" style="margin-top:14px" hidden>
+      <label>Custom colour<input type="color" id="custom" value="#ff2bd6" style="height:44px;padding:4px"></label>
+      <p class="hint" style="align-self:end;margin:0">One colour for the highlights, the progress bar and the telemetry frame, whatever the format.</p>
+    </div>
+    <div class="two" style="margin-top:14px">
+      <label>Night mode after idle (minutes, 0 = never)<input type="number" id="night" min="0" max="600"></label>
+      <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label></div>
+    </div>
+  </section>
+  <details class="extras" id="extras" hidden>
+    <summary>Extras (preview): signal chain, DAC window, listening stats</summary>
+    <p class="hint">These are early previews and are off by default. The standard screen is cover art plus live telemetry from the T8. Switch any of these on if you want them.</p>
+  <figure style="margin:0 0 22px"><a href="example-hud.jpg" target="_blank" title="Open full size"><img src="example-hud.jpg" alt="Example of the HUD on a TV" style="width:100%;border-radius:10px;border:1px solid var(--rule)"></a><figcaption class="hint" style="margin-top:6px">This is the TV screen with everything switched on, using example gear. The <b>signal chain</b> row shows a T8 feeding a DAC over I²S, the DAC feeding a power amp over XLR, and a sub branching off the DAC over RCA (<b>Wired from</b>). The <b>DAC window</b> is bottom right, and the <b>listening stats</b> are bottom left. Every one of these is optional.</figcaption></figure>
+  <section>
+    <h2>Signal chain</h2>
+    <p class="hint">Your gear after the T8. Each box shows the <b>model</b>, with <b>brand + type</b> underneath, exactly as you type them. Add connections (XLR, RCA, speaker cable…) between boxes to show off how it’s all wired.</p>
+    <div class="two" style="margin-bottom:14px">
+      <label>T8 brand<input type="text" id="devBrand" maxlength="40"></label>
+      <label>T8 type<input type="text" id="devType" maxlength="40"></label>
+    </div>
+    <div id="chain"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="add">+ Add gear</button><button id="addLink">+ Add a connection</button></div>
+    <div class="preview" id="preview"></div>
+  </section>
+
+  <section>
+    <h2>DAC window</h2>
+    <p class="hint">A small panel on the TV for settings your DAC can’t report itself (the Eversolo DAC-Z10 has no network API). Set them once; the panel is labelled “your settings” so nobody mistakes it for live data. Up to 8 rows.</p>
+    <label class="check" style="margin-bottom:12px"><input type="checkbox" id="dacOn"> Show the DAC window</label>
+    <label style="margin-bottom:12px">Panel title<input type="text" id="dacTitle" maxlength="40" placeholder="e.g. DAC-Z10"></label>
+    <div id="dac"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="addDac">+ Add a setting</button><button id="z10">Add DAC-Z10 settings</button></div>
+  </section>
+
+  <section>
+    <h2>Extras on the TV</h2>
+    <div style="display:grid;gap:10px"><label class="check"><input type="checkbox" id="chainOn"> Show the signal chain</label><label class="check"><input type="checkbox" id="animOn"> Moving beads on the signal path</label><label class="check"><input type="checkbox" id="stats"> Show listening stats</label></div>
+    <div id="beads" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px">
+      <label>Bead shape<select id="bShape"><option value="glow">Glow</option><option value="dot">Dot</option><option value="diamond">Diamond</option><option value="dash">Dash</option></select></label>
+      <label>Bead colour<select id="bColor"><option value="format">Format colour</option><option value="hardware">Hardware colour</option><option value="white">White</option></select></label>
+      <label>Bead size<select id="bSize"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
+      <label>Bead speed<select id="bSpeed"><option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option></select></label>
+    </div>
+    <p class="hint">Format colour changes with the track (purple for DSD, cyan for hi-res and so on). Beads always flow faster as the bitrate goes up; speed scales that. Untick the beads for a still diagram.</p>
+  </section>
+  </details>
+</main>
+
+<div class="bar"><div class="in"><span class="msg" id="msg"></span><span style="display:flex;gap:8px;flex-wrap:wrap"><button id="previewBtn" title="A sample track, drawn with the settings on this page (saved or not)">Preview HUD</button><button id="liveBtn" disabled>Open live HUD</button><button class="primary" id="save">Save</button></span></div></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const PAL = { cyber: ['Cyberpunk', '#c86bff'], amber: ['Studio amber', '#f2a541'], mono: ['Mono', '#e0e0e0'], custom: ['Custom', null] };
+let st = null, palette = 'cyber', sources = {};
+
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function msg(t, k) { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (k || ''); }
+
+async function load() {
+  st = await (await fetch('/api/settings', { cache: 'no-store' })).json();
+  $('t8Host').value = st.t8Host || '';
+  $('tvurl').innerHTML = (st.lanUrls || []).map(esc).join('<br>') || esc(location.origin);
+  $('devBrand').value = (st.device && st.device.brand) || 'Eversolo';
+  $('devType').value = (st.device && st.device.type) || 'transport';
+  $('eqLabel').value = st.display.eqLabel || '';
+  $('eqNote').value = st.display.eqNote || '';
+  $('eqOn').checked = st.display.showEq !== false;
+  const eqUi = () => { for (const el of $('eqFields').querySelectorAll('input')) el.disabled = !$('eqOn').checked; $('eqFields').style.opacity = $('eqOn').checked ? 1 : .45; };
+  $('eqOn').onchange = eqUi; eqUi();
+  $('night').value = st.display.nightAfterIdleMinutes ?? 10;
+  $('clockOn').checked = st.display.showClock !== false;
+  $('custom').value = st.display.customColor || '#ff2bd6';
+  $('custom').oninput = renderPal;
+  $('extras').hidden = !st.labs; // release 1: chain, DAC window and stats are a hand-enabled labs extra
+  $('stats').checked = !!st.display.showStats;
+  $('chainOn').checked = !!st.display.showChain;
+  $('animOn').checked = st.display.animatePath !== false;
+  $('bShape').value = st.display.beadShape || 'glow';
+  $('bColor').value = st.display.beadColor || 'format';
+  $('bSize').value = st.display.beadSize || 'medium';
+  $('bSpeed').value = st.display.beadSpeed || 'normal';
+  const beadsUi = () => { for (const el of $('beads').querySelectorAll('select')) el.disabled = !$('animOn').checked; $('beads').style.opacity = $('animOn').checked ? 1 : .45; };
+  $('animOn').onchange = beadsUi; beadsUi();
+  palette = st.display.palette || 'cyber';
+  sources = { ...(st.sources || {}) };
+  for (const k of st.seenSources || []) if (!sources[k]) sources[k] = { name: '', note: '' };
+  $('chain').innerHTML = '';
+  for (const c of st.chain || []) addRow(c.model || c.name || '', c.brand || '', c.type || c.role || c.note || '', c.kind, c.from);
+  $('dacOn').checked = !!st.display.showDac;
+  $('dacTitle').value = (st.dacWindow && st.dacWindow.title) || '';
+  $('dac').innerHTML = '';
+  for (const i of (st.dacWindow && st.dacWindow.items) || []) addDac(i.label, i.value);
+  renderSources(); renderPal(); status(); preview();
+}
+
+function status() {
+  const l = st.link || {};
+  $('dot').classList.toggle('on', !!l.connected);
+  liveUi();
+  $('status').textContent = st.demo ? 'Demo mode: replaying a recorded T8' : l.connected ? `Connected to the T8 at ${st.t8Host}` : `No answer from ${st.t8Host}. Is the T8 asleep, or did its address change?`;
+}
+
+function addRow(model = '', brand = '', type = '', kind = '', from = '') {
+  const r = document.createElement('div');
+  const link = kind === 'link';
+  r.className = 'row' + (link ? ' link' : '');
+  r.dataset.kind = link ? 'link' : '';
+  r.dataset.from = from || '';
+  r.innerHTML = link
+    ? `<label>Connection<input type="text" class="m" maxlength="40" value="${esc(model)}" placeholder="e.g. XLR"></label>
+    <label>Cable brand<input type="text" class="b" maxlength="40" value="${esc(brand)}" placeholder="optional"></label>
+    <label>Detail<input type="text" class="t" maxlength="40" value="${esc(type)}" placeholder="e.g. balanced"></label>`
+    : `<label>Model<input type="text" class="m" maxlength="40" value="${esc(model)}" placeholder="e.g. DAC-Z10"></label>
+    <label>Brand<input type="text" class="b" maxlength="40" value="${esc(brand)}" placeholder="e.g. Eversolo"></label>
+    <label>Type<input type="text" class="t" maxlength="40" value="${esc(type)}" placeholder="e.g. DAC"></label>`;
+  r.innerHTML += `<label class="fromlbl">Wired from<select class="f"></select></label><div class="ctl"><button class="icon up" title="Move left">↑</button><button class="icon down" title="Move right">↓</button><button class="icon del" title="Remove">✕</button></div>`;
+  r.querySelector('.up').onclick = () => { if (r.previousElementSibling) r.parentNode.insertBefore(r, r.previousElementSibling); preview(); };
+  r.querySelector('.down').onclick = () => { if (r.nextElementSibling) r.parentNode.insertBefore(r.nextElementSibling, r); preview(); };
+  r.querySelector('.del').onclick = () => { r.remove(); preview(); };
+  r.addEventListener('input', preview);
+  r.querySelector('.f').addEventListener('change', e => { r.dataset.from = e.target.value; preview(); });
+  $('chain').appendChild(r);
+}
+function chainRows() {
+  return [...$('chain').children].map(r => ({ ...(r.dataset.kind === 'link' ? { kind: 'link' } : {}), ...(r.dataset.from ? { from: r.dataset.from } : {}), model: r.querySelector('.m').value.trim(), brand: r.querySelector('.b').value.trim(), type: r.querySelector('.t').value.trim() })).filter(c => c.model || c.brand || c.type);
+}
+
+// DAC-Z10 menu choices, copied from the Eversolo Control app's Z10 settings. Other DACs just type their own.
+const Z10 = {
+  'Input': ['USB-B Audio', 'I²S (HDMI)', 'AES/EBU', 'Optical 1', 'Optical 2', 'Coaxial 1', 'Coaxial 2', 'HDMI ARC', 'Bluetooth', 'Analog XLR', 'Analog RCA'],
+  'Output': ['XLR', 'RCA', 'XLR + RCA'],
+  'Master clock': ['Internal OCXO 10M', 'External 50Ω 10M', 'External 50Ω 25M', 'External 75Ω 10M', 'External 75Ω 25M'],
+  'Clock shaping': ['On', 'Off'],
+  'Filter': ['Linear phase fast roll-off', 'Linear phase slow roll-off', 'Min phase fast roll-off', 'Min phase slow roll-off', 'Linear phase fast switch', 'Min phase fast mix'],
+};
+function addDac(label = '', value = '') {
+  if ($('dac').children.length >= 8) return;
+  const r = document.createElement('div');
+  r.className = 'row';
+  const opts = Z10[label];
+  const val = opts
+    ? `<select class="dv"><option value="">choose…</option>${[...opts, ...(value && !opts.includes(value) ? [value] : [])].map(o => `<option${o === value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+    : `<input type="text" class="dv" maxlength="40" value="${esc(value)}" placeholder="exactly as the DAC menu says">`;
+  r.innerHTML = `<label>Setting<input type="text" class="dl" maxlength="24" value="${esc(label)}" placeholder="e.g. Filter"></label>
+    <label>Value${val}</label>
+    <div class="ctl"><button class="icon up" title="Move up">↑</button><button class="icon del" title="Remove">✕</button></div>`;
+  r.querySelector('.up').onclick = () => { if (r.previousElementSibling) r.parentNode.insertBefore(r, r.previousElementSibling); };
+  r.querySelector('.del').onclick = () => r.remove();
+  $('dac').appendChild(r);
+}
+function dacRows() {
+  return [...$('dac').children].map(r => ({ label: r.querySelector('.dl').value.trim(), value: r.querySelector('.dv').value.trim() })).filter(i => i.label || i.value);
+}
+
+function renderSources() {
+  const keys = Object.keys(sources);
+  $('sources').innerHTML = keys.length ? '' : '<p class="hint">Nothing reported yet. Play something on the T8 and reload this page.</p>';
+  for (const k of keys) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    r.innerHTML = `<span class="src-key">${esc(k)}</span>
+      <label>Name<input type="text" class="n" maxlength="40" value="${esc(sources[k].name)}" placeholder="${esc(k)}"></label>
+      <label${st.labs ? '' : ' hidden'}>Note<input type="text" class="o" maxlength="40" value="${esc(sources[k].note)}" placeholder="shown in the signal chain"></label>
+      <div class="ctl"><button class="icon del" title="Remove">✕</button></div>`;
+    r.querySelector('.n').oninput = e => { sources[k].name = e.target.value; preview(); };
+    r.querySelector('.o').oninput = e => { sources[k].note = e.target.value; preview(); };
+    r.querySelector('.del').onclick = () => { delete sources[k]; renderSources(); preview(); };
+    $('sources').appendChild(r);
+  }
+}
+
+function renderPal() {
+  $('pal').innerHTML = '';
+  for (const [k, [name, sw]] of Object.entries(PAL)) {
+    const b = document.createElement('button');
+    b.setAttribute('aria-pressed', k === palette);
+    b.innerHTML = `<span class="sw" style="background:${sw || $('custom').value}"></span>${name}`;
+    b.onclick = () => { palette = k; renderPal(); };
+    $('pal').appendChild(b);
+  }
+  $('customRow').hidden = palette !== 'custom';
+}
+
+function refreshFrom() {
+  const rows = [...$('chain').children];
+  const gear = rows.filter(r => !r.dataset.from && r.dataset.kind !== 'link').map(r => r.querySelector('.m').value.trim()).filter(Boolean);
+  for (const r of rows) {
+    const sel = r.querySelector('.f'), me = r.querySelector('.m').value.trim(), cur = r.dataset.from;
+    const opts = ['', ...gear.filter(g => g !== me)];
+    if (cur && !opts.includes(cur)) opts.push(cur);
+    sel.innerHTML = opts.map(o => `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${o ? '↳ off ' + esc(o) : 'the box before it'}</option>`).join('');
+  }
+}
+function preview() {
+  refreshFrom();
+  const first = Object.keys(sources)[0];
+  const s = first ? sources[first] : {};
+  const two = (a, b) => [a, b].filter(Boolean).join(' ');
+  const nodes = [
+    [s.name || first || 'Source', s.note || 'library', 'hw'],
+    ['T8', two($('devBrand').value.trim(), $('devType').value.trim()), 'hw'],
+    ['I²S', 'digital output', 'link'],
+    ...chainRows().filter(c => !c.from).map(c => [c.model, two(c.brand, c.type), c.kind === 'link' ? 'link' : 'hw']),
+  ];
+  const groups = {};
+  for (const c of chainRows().filter(c => c.from)) (groups[c.from] ||= []).push([c.model, two(c.brand, c.type), c.kind === 'link' ? 'link' : 'hw']);
+  const pn = ([n, sub, k]) => `<span class="pn ${k}"><b>${esc(n)}</b><small>${esc(sub)}</small></span>`;
+  $('preview').innerHTML = nodes.map(pn).join('<span class="arrow">→</span>') +
+    Object.entries(groups).map(([f, list]) => `<div class="branch"><span class="arrow">↳ from ${esc(f)} →</span>${list.map(pn).join('<span class="arrow">→</span>')}</div>`).join('');
+}
+
+$('addDac').onclick = () => addDac();
+// rows only: you pick each value to match your own Z10's menu
+$('z10').onclick = () => {
+  if (!$('dacTitle').value.trim()) $('dacTitle').value = 'DAC-Z10';
+  const have = dacRows().map(i => i.label.toLowerCase());
+  for (const l of Object.keys(Z10)) if (!have.includes(l.toLowerCase())) addDac(l, '');
+  $('dacOn').checked = true;
+};
+$('add').onclick = () => { addRow(); preview(); };
+$('addLink').onclick = () => { addRow('', '', '', 'link'); preview(); };
+$('addSrc').onclick = () => { const k = $('newSrc').value.trim().toUpperCase(); if (k && !sources[k]) { sources[k] = { name: '', note: '' }; $('newSrc').value = ''; renderSources(); preview(); } };
+for (const id of ['devBrand', 'devType', 'eqLabel', 'eqNote']) $(id).addEventListener('input', preview);
+
+$('find').onclick = async () => {
+  const b = $('find'); b.disabled = true; b.textContent = 'Searching… (about 10 s)';
+  $('found').innerHTML = '';
+  try {
+    const r = await (await fetch('/api/find-t8', { method: 'POST' })).json();
+    const list = r.found || [];
+    $('found').innerHTML = list.length ? '' : '<p class="hint">No T8 answered. Make sure it is awake and on the same network.</p>';
+    for (const f of list) {
+      const btn = document.createElement('button');
+      btn.textContent = `Use ${f.host}${f.name ? ' · ' + f.name : ''}${f.model ? ' (' + f.model + ')' : ''}`;
+      btn.onclick = () => { $('t8Host').value = f.host; msg('Address filled in. Press Save.', ''); };
+      $('found').appendChild(btn);
+    }
+  } catch { $('found').innerHTML = '<p class="hint">Search failed.</p>'; }
+  b.disabled = false; b.textContent = 'Find my T8';
+};
+
+function formDisplay() {
+  return { palette, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
+}
+// Preview: the HUD with a sample track, drawn with what's on this page right now (saved or not)
+$('previewBtn').onclick = () => {
+  const d = formDisplay();
+  const pick = { palette: d.palette, customColor: d.customColor, showClock: d.showClock, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
+  window.open('/?preview=' + encodeURIComponent(JSON.stringify(pick)), 't8hud-preview');
+};
+$('liveBtn').onclick = () => { if (!$('liveBtn').disabled) window.open('/', 't8hud-live'); };
+function liveUi() {
+  const up = !!(st && (st.link || {}).connected) || (st && st.demo);
+  $('liveBtn').disabled = !up;
+  $('liveBtn').title = up ? 'Open the HUD with what the T8 is playing now' : 'The T8 is not answering yet';
+}
+// keep the T8 status and the live button current while this page is open
+setInterval(async () => {
+  try { const j = await (await fetch('/api/state', { cache: 'no-store' })).json(); if (st) { st.link = j.link; status(); } } catch {}
+}, 5000);
+
+$('save').onclick = async () => {
+  const body = {
+    t8Host: $('t8Host').value.trim(),
+    device: { brand: $('devBrand').value.trim(), type: $('devType').value.trim() },
+    chain: chainRows(),
+    dacWindow: { title: $('dacTitle').value.trim(), items: dacRows() },
+    sources: Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, { name: (v.name || '').trim(), note: (v.note || '').trim() }])),
+    display: formDisplay(),
+  };
+  msg('Saving…');
+  try {
+    const r = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Save failed');
+    msg('Saved ✓ The TV updates in a second.', 'ok');
+    setTimeout(() => load().catch(() => {}), 1500);
+  } catch (e) { msg(e.message, 'err'); }
+};
+
+load().catch(() => msg('Could not reach the HUD.', 'err'));
+</script>
+</body>
+</html>
