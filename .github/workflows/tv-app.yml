@@ -1,12 +1,18 @@
 name: TV app
 # Builds the Google TV / Android TV app (android/). Pushing a version tag (v1.2.3) builds a signed APK
 # and publishes a GitHub Release with it attached as t8-hud.apk (release notes: docs/release-notes.md
-# if present). Publishing a release by hand in the GitHub UI does the same. So
+# if present). Publishing a release by hand in the GitHub UI does the same, and so does running this
+# workflow by hand with "release" ticked (it tags the commit v<package.json version>). So
 # https://github.com/<repo>/releases/latest/download/t8-hud.apk always points at the newest one.
 on:
   push:
     paths: ['android/**', 'public/**', 'lib/normalize.js', 'config.example.json', 'package.json', '.github/workflows/tv-app.yml']
   workflow_dispatch:
+    inputs:
+      release:
+        description: Publish a release (tag v<package.json version>)
+        type: boolean
+        default: false
   release:
     types: [published]
 
@@ -17,10 +23,13 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     env:
-      IS_RELEASE: ${{ github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') }}
-      TAG: ${{ github.event.release.tag_name || github.ref_name }}
+      IS_RELEASE: ${{ github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || inputs.release == true }}
+      TAG: ${{ github.event.release.tag_name || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Release tag from package.json (manual release)
+        if: env.IS_RELEASE == 'true' && env.TAG == ''
+        run: echo "TAG=v$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -41,8 +50,8 @@ jobs:
       - name: Build the APK
         env:
           T8HUD_KEYSTORE_PASSWORD: ${{ secrets.T8HUD_KEYSTORE_PASSWORD }}
-          T8HUD_VERSION_SUFFIX: ${{ (github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')) && '' || format('-dev.{0}', github.run_number) }}
-          T8HUD_BUILD_NUMBER: ${{ (github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')) && '999' || github.run_number }}
+          T8HUD_VERSION_SUFFIX: ${{ env.IS_RELEASE == 'true' && '' || format('-dev.{0}', github.run_number) }}
+          T8HUD_BUILD_NUMBER: ${{ env.IS_RELEASE == 'true' && '999' || github.run_number }}
         run: gradle -p android assembleRelease --no-daemon --stacktrace
       - run: cp android/app/build/outputs/apk/release/app-release.apk t8-hud.apk
       - uses: actions/upload-artifact@v4
@@ -63,7 +72,7 @@ jobs:
             gh release upload "$TAG" t8-hud.apk --clobber
           else
             notes=docs/release-notes.md; [ -f "$notes" ] || { echo "T8 HUD $TAG" > /tmp/notes.md; notes=/tmp/notes.md; }
-            gh release create "$TAG" t8-hud.apk --title "T8 HUD $TAG" --notes-file "$notes"
+            gh release create "$TAG" t8-hud.apk --target "$GITHUB_SHA" --title "T8 HUD $TAG" --notes-file "$notes"
           fi
       - name: Keep the latest test build on the apk-builds branch
         if: env.IS_RELEASE != 'true' && github.repository == 'ZRolesLabs/t8-hud-dev'
