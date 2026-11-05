@@ -53,7 +53,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
    ```
    <img src="docs/tv/dl-5-url.png" alt="The T8 HUD address typed into Downloader" width="640">
 
-   When the download finishes, press **Install**, then **Done**. If Android says Downloader isn't allowed to install apps, press **Settings**, switch Downloader on, press **Back** and try again. Downloader then offers to delete the downloaded file. Say yes: the app is installed, and the file is no longer needed.
+   When the download finishes, press **Install**. If Android says Downloader isn't allowed to install apps, press **Settings**, switch Downloader on, press **Back** and try again. When it says "App installed", press **Done** (or **Open** to start T8 HUD straight away). Downloader then offers to delete the downloaded file. Say yes: the app is installed, and the file is no longer needed.
 
 5. **[TV] Open T8 HUD.** It's under Apps: scroll to the end of "Your apps", or open "See all apps". Make sure the T8 is switched on. While it searches, the screen says "Looking for your T8 on the network…". It finds the T8 within about 10 seconds and the HUD appears.
 
