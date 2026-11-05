@@ -2,7 +2,7 @@
 
 # T8 HUD
 
-A read-only, account-free, strictly anti-enshittification “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only things it ever fetches from the internet are cover art for streamed tracks, from the streaming service’s own image server, and (in the Google TV app) a check for new versions on GitHub.
+An un-enshittified, read-only, account-free “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only things it ever fetches from the internet are cover art for streamed tracks, from the streaming service’s own image server, and (in the Google TV app) a check for new versions on GitHub.
 
 ![T8 HUD on a TV](docs/screenshot.png)
 
