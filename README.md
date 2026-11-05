@@ -23,7 +23,7 @@ ZRolesLabs is NOT affiliated with Eversolo. App reads the same local HTTP API th
 
 The easiest way. The app runs on the TV itself, finds the T8 by itself and polls it directly. No PC, no Pi, no account and no Play Store. It keeps the screen awake while the HUD is up, so Google TV's ambient mode (screensaver) stays away.
 
-**You need:** a Google TV or Android TV device running Android 7 or newer (for example the Google TV Streamer, Chromecast with Google TV, or a TV with Google TV built in), on the same network as the T8. Tested on a Google TV Streamer (Android TV 14). Fire TV and other Android boxes will probably work too, and reports are welcome.
+**You need:** a Google TV or Android TV device running Android 7 or newer (for example the Google TV Streamer, Chromecast with Google TV, or a TV with Google TV built in), on the same network as the T8 (or another Eversolo, see **[Other Eversolo players](#other-eversolo-players)**). Tested on a Google TV Streamer (Android TV 14). Fire TV and other Android boxes will probably work too, and reports are welcome.
 
 > **Rather have someone hold your hand? [Let an AI walk you through it](#let-an-ai-install-it-for-you).**
 
@@ -97,7 +97,7 @@ There are no npm packages and no accounts, and the fonts are bundled. The only i
 
 **N/A is on purpose.** When a box says **N/A · not reported by …**, the T8 simply doesn't send that value for the source. For example, with Spotify Connect the T8 only reports the decoded output (PCM 44.1/16), not whether Spotify sent Ogg or FLAC, or at what bitrate. The HUD won't fill the gap with a guess or with the decoded PCM rate dressed up as a stream bitrate. The line under the boxes still shows the real raw PCM figure.
 
-Tested on firmware v1.6.15 with local files, in-app TIDAL, TIDAL Connect and Spotify Connect. Use one of the untested ones, or a source looks wrong? Open `http://<computer-IP>:8080/api/raw` while it plays and attach the text to an issue. That's the fastest way to get it confirmed or fixed.
+Tested on firmware v1.6.15 with local files, in-app TIDAL, TIDAL Connect and Spotify Connect. Use one of the untested ones, or a source looks wrong? Open the raw-data page while it plays (`http://<computer-IP>:8080/api/raw`, or the Google TV app's setup address with `/api/raw` on the end) and attach the text to an issue. That's the fastest way to get it confirmed or fixed.
 
 ## Quick start
 
@@ -342,7 +342,15 @@ It does **not** expose audio levels or which drive a file is on, so the HUD does
 
 ## Other Eversolo players
 
-The HUD reads the same local API that the Eversolo Control app uses. The **T10** runs the same OS as the T8, and Eversolo's DMP-A6, A8 and A10 streamers appear to share the API, so they will very likely work too. Only the T8 has been tested so far. If you have another model, please help: play something, open `http://<computer-IP>:8080/api/raw`, and attach the text to an issue with your model and firmware version. That's usually all it takes to add support. (Players with digital inputs, like the DMP-A6/A8/A10, have no track info while an input is selected; the HUD already knows to show "Nothing playing" then, based on Eversolo community API notes.)
+The HUD reads the same local API that the Eversolo Control app uses, so it should work on any Eversolo streamer that speaks it:
+
+- **T8:** built and tested on it (firmware v1.6.15).
+- **T10:** runs the same OS as the T8, so it should work the same.
+- **DMP-A6, A8 and A10:** appear to share the API, so they should work too. These have digital inputs: while an input is selected, the player sends no track info, so the HUD shows "Nothing playing" instead of guessing.
+
+Finding the player: the **Find my T8** button and the automatic search look for any player that answers on that API, whatever the model, so "T8" in the name is just the name. If yours isn't found, type its address by hand on the setup page (the player shows it in its network settings).
+
+Got a model other than the T8? Please help: play something, open the raw-data page and attach the text to an issue with your model and firmware version. That's usually all it takes to add proper support. The raw-data page is `http://<computer-IP>:8080/api/raw` for the browser version, or for the Google TV app, the address shown on its setup page with `/api/raw` on the end (e.g. `http://192.168.1.20:8080/api/raw`).
 
 ## Coming later
 
@@ -352,7 +360,7 @@ The HUD reads the same local API that the Eversolo Control app uses. The **T10**
 
 ## Bugs, questions and ideas
 
-Open an issue: **[Report a bug, ask a question, or suggest an idea](https://github.com/ZRolesLabs/t8-hud/issues/new/choose)**. Each has a short form. For a bug, pasting `http://<computer-IP>:8080/api/raw` while the track plays is the single most useful thing you can add.
+Open an issue: **[Report a bug, ask a question, or suggest an idea](https://github.com/ZRolesLabs/t8-hud/issues/new/choose)**. Each has a short form. For a bug, pasting the raw-data page (`http://<computer-IP>:8080/api/raw`, or the TV app's setup address with `/api/raw` on the end) while the track plays is the single most useful thing you can add.
 
 ## Development
 
