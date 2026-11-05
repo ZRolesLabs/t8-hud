@@ -17,14 +17,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 /**
- * Full-screen HUD. OK (or Menu) on the remote opens setup; Back returns to the HUD, and Back on the
- * HUD closes the app. The screen stays on while the app is open.
+ * Full-screen HUD. Any remote key on the HUD opens a small menu (Settings · About · Exit); Menu goes
+ * straight to setup. On setup, Back returns to the HUD; Back on the HUD (menu closed) closes the app. The screen stays on while the app is open.
  */
 public final class MainActivity extends Activity {
     private static HudServer server; // one per process, survives the activity being recreated
     private WebView web;
-    private static final long HINT_MS = 5000; // how long the key hint stays up (matches bridge.js)
-    private long hintShownAt = -HINT_MS;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateTick = new Runnable() {
         @Override public void run() { if (server != null) server.updater.maybeCheck(); handler.postDelayed(this, 600_000); }
@@ -105,13 +103,19 @@ public final class MainActivity extends Activity {
             if (e.getAction() == KeyEvent.ACTION_UP) web.loadUrl(base() + "/setup");
             return true;
         }
-        // On the HUD a first press only shows the small key hint; OK while it's showing opens setup.
-        boolean dpad = k == KeyEvent.KEYCODE_DPAD_UP || k == KeyEvent.KEYCODE_DPAD_DOWN || k == KeyEvent.KEYCODE_DPAD_LEFT || k == KeyEvent.KEYCODE_DPAD_RIGHT;
-        if (hud && (open || dpad)) {
+        // On the HUD the page owns the remote: a first press opens the small menu (Settings · About · Exit),
+        // the D-pad moves along it, OK picks, Back closes it. The page answers what the app has to do.
+        String key = k == KeyEvent.KEYCODE_DPAD_LEFT ? "left" : k == KeyEvent.KEYCODE_DPAD_RIGHT ? "right"
+                : k == KeyEvent.KEYCODE_DPAD_UP ? "up" : k == KeyEvent.KEYCODE_DPAD_DOWN ? "down"
+                : open ? "ok" : k == KeyEvent.KEYCODE_BACK ? "back" : null;
+        if (hud && key != null) {
             if (e.getAction() == KeyEvent.ACTION_UP) {
-                long now = android.os.SystemClock.uptimeMillis();
-                if (open && now - hintShownAt < HINT_MS) { hintShownAt = -HINT_MS; web.loadUrl(base() + "/setup"); }
-                else { hintShownAt = now; web.evaluateJavascript("window.t8Hint && t8Hint()", null); }
+                // before the page has loaded: Back still exits and OK still opens setup
+                String fallback = key.equals("back") ? "'exit'" : key.equals("ok") ? "'settings'" : "''";
+                web.evaluateJavascript("window.t8Key ? t8Key('" + key + "') : " + fallback, v -> {
+                    if ("\"settings\"".equals(v)) web.loadUrl(base() + "/setup");
+                    else if ("\"exit\"".equals(v)) finish();
+                });
             }
             return true;
         }

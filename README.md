@@ -63,7 +63,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
 
 ### Using it
 
-- **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small chip appears in the corner: **[OK] Settings · [BACK] Exit**. Press **OK** again while it shows to open the setup page. **Back** on the HUD closes the app.
+- **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small menu appears in the corner: **Settings · About · Exit**. Move along it with left and right, press **OK** to pick. **About** shows the version, where the project lives and how to get in touch. **Back** closes the menu, and Back on the HUD closes the app. The **Menu** button, if your remote has one, goes straight to Settings.
 - **Set it up from your phone.** Typing with a remote is slow, so the setup page shows a QR code. Point your phone camera at it and tap the link, and the same setup page opens on your phone. You can also type the address shown next to it, such as `http://192.168.1.20:8080/setup`, into any browser on the same network. Changes you save on the phone show on the TV straight away.
 
 <p>
@@ -154,8 +154,8 @@ Steps to cover:
    some TVs).
 4. Download and install the APK from the README's address.
 5. Open T8 HUD and check it finds my T8 (the T8 must be on, not in standby).
-6. Show me how to open the setup page from my phone (press OK twice on the
-   remote, then scan the QR code with my phone camera; the phone must be on
+6. Show me how to open the setup page from my phone (press OK on the
+   remote, pick Settings, then scan the QR code with my phone camera; the phone must be on
    the same Wi-Fi as the TV).
 
 If the app can't find the T8, check the README's Troubleshooting section,
@@ -324,7 +324,7 @@ launchctl load ~/Library/LaunchAgents/com.t8hud.plist
 - **The TV or phone times out, but `http://localhost:8080` works on the HUD computer.** Something on that computer is dropping connections from your network. The usual cause is a **VPN app** (Proton VPN, NordVPN and others): its kill switch or "block LAN" setting can block your TV even while the VPN is disconnected. Turn on the VPN's "allow LAN connections" option, quit the app, or uninstall it, then reload the page on the TV. Also check the firewall rule from the boot recipe above.
 - **The whole HUD stops answering after a while (Windows).** Windows puts the computer to sleep after 30 minutes by default, and the HUD sleeps with it. Settings → System → Power (or Power & battery) → Screen and sleep → set "put my device to sleep" to **Never** (the screen can still turn off). If it still drops, open Device Manager → Network adapters → your Ethernet adapter → Power Management and untick "Allow the computer to turn off this device to save power".
 - **"T8 asleep or offline".** The T8 drops its network API when it's in standby. Waking it brings the HUD back. Setting Other Settings → Power Mode → **Startup after power plug in** brings it back after a power cut.
-- **The Google TV app can't find the T8** (it keeps saying "Looking for your T8 on the network…" or "T8 asleep or offline"). Make sure the T8 is on (not in standby) and on the same network as the TV, not a guest Wi-Fi. Open the setup page (OK on the remote, or the address from your phone) and press **Find my T8**, or type the T8's address by hand (the T8 shows it under Settings → Network Settings).
+- **The Google TV app can't find the T8** (it keeps saying "Looking for your T8 on the network…" or "T8 asleep or offline"). Make sure the T8 is on (not in standby) and on the same network as the TV, not a guest Wi-Fi. Open the setup page (OK on the remote, then Settings, or the address from your phone) and press **Find my T8**, or type the T8's address by hand (the T8 shows it under Settings → Network Settings).
 - **Downloader says the download failed.** Check the address letter by letter: it's case-sensitive (`ZRolesLabs`). If a release has only just been published, wait a few minutes and try again.
 - **The TV goes to its screensaver or switches itself off (browser version).** This is the TV, not the HUD. The Google TV app keeps the screen awake by itself, so this only applies to the browser version. Smart TVs and TV boxes only stay awake for what they count as video, and a web page isn't video, so the TV's idle timer keeps running while the HUD is up. Turn the timers off on the TV or TV box itself. On Google TV, set Settings → System → Ambient mode → Start ambient mode after → **Never**, and Settings → System → Power & Energy → Energy saver (or "Turn off display") → **Never**. If the browser runs on a stick or box (Chromecast, Fire TV, Apple TV), that box's own sleep timer counts too, and with HDMI-CEC on it can switch the TV off when it sleeps. Menu names differ between models and firmware versions, so on other TVs look for "screensaver", "auto power off", "sleep timer" or "no signal power off". The HUD can't change these for you.
 - **The TV page freezes after days of running.** Some TV browsers get sluggish when left open for days. The HUD page reloads itself once a day while nothing is playing; if it still freezes, close and reopen the browser. For a cleaner full-screen look, use your browser's full-screen or kiosk option (TV Bro has one in its menu).
