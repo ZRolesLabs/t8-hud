@@ -4,7 +4,10 @@ labels: [question]
 body:
   - type: markdown
     attributes:
-      value: Have a quick look at the README's Troubleshooting section first; the common ones (VPN apps, sleep, T8 not found) are there.
+      value: |
+        <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="480">
+
+        Have a quick look at the README's Troubleshooting section first; the common ones (VPN apps, sleep, T8 not found) are there.
   - type: textarea
     id: question
     attributes:

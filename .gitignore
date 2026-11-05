@@ -2,3 +2,7 @@ config.json
 data/
 node_modules/
 hud.log
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

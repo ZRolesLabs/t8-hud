@@ -406,7 +406,7 @@ setInterval(() => { for (const res of clients) res.write(`event: hb\ndata: ${Dat
 
 stats.init(path.join(ROOT, 'data'));
 server.on('error', err => {
-  if (err.code === 'EADDRINUSE') { console.error(`Port ${cfg.port || 8080} is already in use: the HUD is probably already running in another window. Close that one first (or run: Stop-Process -Name node).`); process.exit(1); }
+  if (err.code === 'EADDRINUSE') { console.error(`Port ${cfg.port || 8080} is already in use: the HUD is probably already running in another window. Close that one first (${process.platform === 'win32' ? 'or run: Stop-Process -Name node' : 'or run: sudo systemctl stop t8hud, or pkill node'}).`); process.exit(1); }
   throw err;
 });
 // this computer's addresses on the home network, so nobody has to go looking for them
