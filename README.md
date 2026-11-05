@@ -1,18 +1,81 @@
+<p align="center"><img src="docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="800"></p>
+
 # T8 HUD
 
-A read-only, account-free, strictly anti-enshittification “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only thing it ever fetches from the internet is cover art for streamed tracks, from the streaming service’s own image server.
+A read-only, account-free, strictly anti-enshittification “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only things it ever fetches from the internet are cover art for streamed tracks, from the streaming service’s own image server, and (in the Google TV app) a check for new versions on GitHub.
 
 ![T8 HUD on a TV](docs/screenshot.png)
 
 Big cover art and deep, live telemetry: the real stream format (DSD64 · 2.8224 MHz · 1-bit · 5.645 Mbps), container, bit depth, channels, bitrate, what the T8 is outputting and on which interface, whether the output rate matches the source, volume lock, and EQ / DSP / MQA state. It works with local files and with streaming: TIDAL in the T8's own app, TIDAL Connect, and other connect and network sources the T8 reports.
 
-This is release 1: cover art, track info, telemetry and a clock, and nothing else. More is on the way (see **Coming later**).
+It comes two ways:
+
+- **Google TV app:** install it on your Google TV or Android TV and you're done. It talks to the T8 directly, so there's no computer to leave running. See **[Google TV app](#google-tv-app)**.
+- **Browser version:** a tiny server on an always-on computer (Windows, Mac, Linux or a Raspberry Pi), and any web browser shows the HUD: a TV, tablet, phone or laptop. See **[Quick start](#quick-start)**.
+
+Both show the same screen: cover art, track info, telemetry and a clock. More is on the way (see **Coming later**).
 
 **Everything on screen is real.** It's either reported by the T8 or typed in by you. There are no fake level meters or invented specs.
 
 ZRolesLabs is NOT affiliated with Eversolo. App reads the same local HTTP API the Eversolo Control app uses (port 9529) and never sends a command to your player.
 
-## What you need
+## Google TV app
+
+The easiest way. The app runs on the TV itself, finds the T8 by itself and polls it directly. No PC, no Pi, no account and no Play Store. It keeps the screen awake while the HUD is up, so Google TV's ambient mode (screensaver) stays away.
+
+**You need:** a Google TV or Android TV device running Android 7 or newer (for example the Google TV Streamer, Chromecast with Google TV, or a TV with Google TV built in), on the same network as the T8. Tested on a Google TV Streamer (Android TV 14). Fire TV and other Android boxes will probably work too, and reports are welcome.
+
+> **Rather have someone hold your hand? [Let an AI walk you through it](#let-an-ai-install-it-for-you).**
+
+### Install it (about 5 minutes, all with the remote)
+
+1. **[TV] Get the Downloader app.** Open the Google Play Store on the TV, search for **Downloader** and install the orange one **by AFTVnews**. It's a free, well-known app for downloading files onto a TV.
+
+   > ⚠️ **Watch out for lookalikes.** The search also shows apps such as "Downloader TV: APK Installer". Those are not the same thing. The right one says **AFTVnews** under the name and has the orange **D** icon.
+
+   <img src="docs/tv/dl-1-store.png" alt="Downloader by AFTVnews in the Play Store" width="640">
+
+2. **[TV] Turn on developer mode.** Go to **Settings → System → About**, scroll to the bottom, then press OK on **Android TV OS build** 7 times, until it says "You are now a developer!". Google TV hides the switch in the next step until you do this.
+
+   <img src="docs/tv/dl-2-about.png" alt="About screen with Android TV OS build highlighted" width="420">
+
+3. **[TV] Let Downloader install apps.** Go to **Settings → Apps → Security & restrictions → Unknown sources**. On some TVs this screen is called **Install unknown apps**. Switch **Downloader** on, so it says **Allowed**.
+
+   <img src="docs/tv/dl-3-unknown.png" alt="Install unknown apps with Downloader allowed" width="420">
+
+4. **[TV] Download T8 HUD.** Open Downloader. If it asks for permission to access files, choose **Allow**. Select the address box at the top:
+
+   <img src="docs/tv/dl-4-downloader.png" alt="Downloader's address box" width="640">
+
+   Type this address exactly, then press **Load**:
+   ```
+   github.com/ZRolesLabs/t8-hud/releases/latest/download/t8-hud.apk
+   ```
+   <img src="docs/tv/dl-5-url.png" alt="The T8 HUD address typed into Downloader" width="640">
+
+   When the download finishes, press **Install**, then **Done**. If Android says Downloader isn't allowed to install apps, press **Settings**, switch Downloader on, press **Back** and try again. Downloader then offers to delete the downloaded file. Say yes: the app is installed, and the file is no longer needed.
+
+5. **[TV] Open T8 HUD.** It's under Apps: scroll to the end of "Your apps", or open "See all apps". Make sure the T8 is switched on. While it searches, the screen says "Looking for your T8 on the network…". It finds the T8 within about 10 seconds and the HUD appears.
+
+**Tidy-up (optional):** once T8 HUD is installed you can switch Downloader off again under Unknown sources, or uninstall Downloader. T8 HUD installs its own updates and asks for its own permission the first time.
+
+<img src="docs/tv/tv-hud.png" alt="The T8 HUD app on a TV" width="800">
+
+### Using it
+
+- **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small chip appears in the corner: **[OK] Settings · [BACK] Exit**. Press **OK** again while it shows to open the setup page. **Back** on the HUD closes the app.
+- **Set it up from your phone.** Typing with a remote is slow, so the setup page shows a QR code. Point your phone camera at it and tap the link, and the same setup page opens on your phone. You can also type the address shown next to it, such as `http://192.168.1.20:8080/setup`, into any browser on the same network. Changes you save on the phone show on the TV straight away.
+
+<p>
+<img src="docs/tv/tv-setup.png" alt="The setup page on the TV, with the QR code" width="560">
+<img src="docs/tv/phone-setup.png" alt="The same setup page on a phone" width="220">
+</p>
+
+- **Updates:** the app checks GitHub for a new version every so often. That's the only thing it contacts outside your home, apart from cover art. When one is out, the HUD mentions it briefly and the setup page shows an **Install update** button. The first time, Android asks you to allow T8 HUD to install apps: say yes. Your settings stay as they are.
+- **The T8 is never touched:** like the browser version, the app only reads from the T8.
+- **Pin it:** in "Your apps", hold OK on T8 HUD and choose **Move**, to put it at the front.
+
+## What you need (browser version)
 
 - An Eversolo T8. The T10 and other Eversolo players will very likely work too (see **Other Eversolo players**), and reports are welcome.
 - An always-on computer on the same network (Windows, Mac, Linux or a Raspberry Pi) with **Node.js 18 or newer**. It doesn't need to be your main PC: the HUD uses almost no CPU, so an old laptop, a mini PC in the media cabinet or a Raspberry Pi is plenty.
@@ -62,7 +125,46 @@ No T8 handy? `node server.js --demo` replays a recorded T8.
 
 ## Let an AI install it for you
 
-Not a command-line person? Hand the job to an AI assistant, like [Claude](https://claude.ai/). Paste the prompt below. Fill in the two blanks if you know them; if not, leave them and the assistant will ask you.
+Hand the job to an AI assistant, like [Claude](https://claude.ai/). Pick the prompt for the version you want, paste it in, and it walks you through every step, one at a time.
+
+### Google TV app
+
+```text
+I want to install the T8 HUD Google TV app (https://github.com/ZRolesLabs/t8-hud),
+a read-only "now playing" display for my Eversolo T8. It's not on the Play
+Store: it's sideloaded from GitHub Releases with the Downloader app.
+
+My TV device is: [e.g. Google TV Streamer / Chromecast with Google TV / Sony TV]
+  (if I left this blank, ask me first)
+
+Read the "Google TV app" section of the repo's README first and follow it.
+If you can't open web pages, say so and I'll paste that section in for you.
+
+I'm not technical. Walk me through it ONE step at a time and wait for my
+reply after each step. Start every step with the device it happens on,
+e.g. "[TV]" or "[Phone]". Give exact menu names and the exact text to type,
+never "something like". Menu names differ a bit between TV models: if what
+I see doesn't match, ask me to describe or photograph the screen.
+
+Steps to cover:
+1. Install Downloader by AFTVnews from the Play Store on the TV (NOT the
+   lookalikes such as "Downloader TV: APK Installer").
+2. Turn on developer mode (About → Android TV OS build, 7 presses).
+3. Allow Downloader under Unknown sources (called "Install unknown apps" on
+   some TVs).
+4. Download and install the APK from the README's address.
+5. Open T8 HUD and check it finds my T8 (the T8 must be on, not in standby).
+6. Show me how to open the setup page from my phone (press OK twice on the
+   remote, then scan the QR code with my phone camera; the phone must be on
+   the same Wi-Fi as the TV).
+
+If the app can't find the T8, check the README's Troubleshooting section,
+then ask me what the screen says before guessing.
+```
+
+### Browser version (always-on computer)
+
+Fill in the two blanks if you know them; if not, leave them and the assistant will ask you.
 
 ```text
 I want to install T8 HUD (https://github.com/ZRolesLabs/t8-hud), a read-only
@@ -222,7 +324,9 @@ launchctl load ~/Library/LaunchAgents/com.t8hud.plist
 - **The TV or phone times out, but `http://localhost:8080` works on the HUD computer.** Something on that computer is dropping connections from your network. The usual cause is a **VPN app** (Proton VPN, NordVPN and others): its kill switch or "block LAN" setting can block your TV even while the VPN is disconnected. Turn on the VPN's "allow LAN connections" option, quit the app, or uninstall it, then reload the page on the TV. Also check the firewall rule from the boot recipe above.
 - **The whole HUD stops answering after a while (Windows).** Windows puts the computer to sleep after 30 minutes by default, and the HUD sleeps with it. Settings → System → Power (or Power & battery) → Screen and sleep → set "put my device to sleep" to **Never** (the screen can still turn off). If it still drops, open Device Manager → Network adapters → your Ethernet adapter → Power Management and untick "Allow the computer to turn off this device to save power".
 - **"T8 asleep or offline".** The T8 drops its network API when it's in standby. Waking it brings the HUD back. Setting Other Settings → Power Mode → **Startup after power plug in** brings it back after a power cut.
-- **The TV goes to its screensaver or switches itself off.** This is the TV, not the HUD. Smart TVs and TV boxes only stay awake for what they count as video, and a web page isn't video, so the TV's idle timer keeps running while the HUD is up. Turn the timers off on the TV or TV box itself. On Google TV, set Settings → System → Ambient mode → Start ambient mode after → **Never**, and Settings → System → Power & Energy → Energy saver (or "Turn off display") → **Never**. If the browser runs on a stick or box (Chromecast, Fire TV, Apple TV), that box's own sleep timer counts too, and with HDMI-CEC on it can switch the TV off when it sleeps. Menu names differ between models and firmware versions, so on other TVs look for "screensaver", "auto power off", "sleep timer" or "no signal power off". The HUD can't change these for you.
+- **The Google TV app can't find the T8** (it keeps saying "Looking for your T8 on the network…" or "T8 asleep or offline"). Make sure the T8 is on (not in standby) and on the same network as the TV, not a guest Wi-Fi. Open the setup page (OK on the remote, or the address from your phone) and press **Find my T8**, or type the T8's address by hand (the T8 shows it under Settings → Network Settings).
+- **Downloader says the download failed.** Check the address letter by letter: it's case-sensitive (`ZRolesLabs`). If a release has only just been published, wait a few minutes and try again.
+- **The TV goes to its screensaver or switches itself off (browser version).** This is the TV, not the HUD. The Google TV app keeps the screen awake by itself, so this only applies to the browser version. Smart TVs and TV boxes only stay awake for what they count as video, and a web page isn't video, so the TV's idle timer keeps running while the HUD is up. Turn the timers off on the TV or TV box itself. On Google TV, set Settings → System → Ambient mode → Start ambient mode after → **Never**, and Settings → System → Power & Energy → Energy saver (or "Turn off display") → **Never**. If the browser runs on a stick or box (Chromecast, Fire TV, Apple TV), that box's own sleep timer counts too, and with HDMI-CEC on it can switch the TV off when it sleeps. Menu names differ between models and firmware versions, so on other TVs look for "screensaver", "auto power off", "sleep timer" or "no signal power off". The HUD can't change these for you.
 - **The TV page freezes after days of running.** Some TV browsers get sluggish when left open for days. The HUD page reloads itself once a day while nothing is playing; if it still freezes, close and reopen the browser. For a cleaner full-screen look, use your browser's full-screen or kiosk option (TV Bro has one in its menu).
 - **The TV shows an old version.** Some TV browsers cache hard. On Google TV: Settings → Apps → TV Bro → Force stop, then Clear data, then reopen. From v0.1.5 on, this shouldn't happen.
 
@@ -244,7 +348,6 @@ The HUD reads the same local API that the Eversolo Control app uses. The **T10**
 
 - Signal chain: your DAC, amp and speakers drawn as a live path (already built, being polished)
 - A DAC window for settings your DAC can't report itself, and local listening stats
-- A native Google TV app that talks to the T8 directly, so no always-on computer is needed
 - Real level meters, if a clean way to get the audio turns up. A spare-output tap won't do it: the T8 plays through the one output port you select (USB, IIS or COAX/OPT/AES), so with IIS to your DAC, nothing else carries the music.
 
 ## Bugs, questions and ideas

@@ -4,7 +4,10 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping. The more of this you fill in, the faster it gets fixed.
+      value: |
+        <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="480">
+
+        Thanks for helping. The more of this you fill in, the faster it gets fixed.
   - type: textarea
     id: what
     attributes:

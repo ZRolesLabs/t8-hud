@@ -4,7 +4,10 @@ labels: [idea]
 body:
   - type: markdown
     attributes:
-      value: One rule shapes every idea here. Everything on screen must be real, either reported by the player or typed in by you. No decorative meters or invented numbers.
+      value: |
+        <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="480">
+
+        One rule shapes every idea here. Everything on screen must be real, either reported by the player or typed in by you. No decorative meters or invented numbers.
   - type: textarea
     id: idea
     attributes:

@@ -1,0 +1,62 @@
+// T8 HUD for Google TV / Android TV. The app carries the same HUD page as the bridge (../public)
+// and a tiny server of its own, so the TV talks to the T8 directly: no PC, no Pi, no cloud.
+import groovy.json.JsonSlurper
+
+plugins { id 'com.android.application' }
+
+def repoRoot = rootProject.projectDir.parentFile
+def pkg = new JsonSlurper().parse(new File(repoRoot, 'package.json'))
+def ver = pkg.version.toString()
+def parts = ver.tokenize('.-').take(3).collect { it.isInteger() ? it.toInteger() : 0 }
+def suffix = System.getenv('T8HUD_VERSION_SUFFIX') ?: ''
+// Every build needs its own versionCode: Android (and the Google TV launcher's icon cache) treat two
+// builds with the same code as the same app. Test builds use the CI run number (1-998); a release
+// uses 999, so it always installs over any test build of the same version.
+def buildNo = (System.getenv('T8HUD_BUILD_NUMBER') ?: '999').toInteger() % 999 ?: 999
+
+android {
+    namespace 'labs.zroles.t8hud'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'labs.zroles.t8hud'
+        minSdk 24
+        targetSdk 35
+        versionCode((parts[0] * 10000 + parts[1] * 100 + parts[2]) * 1000 + buildNo)
+        versionName ver + suffix
+    }
+    signingConfigs {
+        release {
+            // A release build is signed with the key from the environment (GitHub Actions secrets).
+            // Without one, the development key in this folder is used, so test builds still install.
+            def ks = System.getenv('T8HUD_KEYSTORE')
+            storeFile ks ? file(ks) : file('../dev.keystore')
+            storePassword System.getenv('T8HUD_KEYSTORE_PASSWORD') ?: 't8hud-dev'
+            keyAlias System.getenv('T8HUD_KEY_ALIAS') ?: 't8hud'
+            keyPassword System.getenv('T8HUD_KEY_PASSWORD') ?: System.getenv('T8HUD_KEYSTORE_PASSWORD') ?: 't8hud-dev'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            // forks without a key fall back to Android's debug key, so the build still works
+            signingConfig((System.getenv('T8HUD_KEYSTORE') || file('../dev.keystore').exists()) ? signingConfigs.release : signingConfigs.debug)
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    buildFeatures { buildConfig true }
+    lint { checkReleaseBuilds false; abortOnError false }
+    sourceSets.main.assets.srcDirs += layout.buildDirectory.dir('hudAssets').get().asFile
+}
+
+// copy the shared HUD page, the payload normaliser and the demo track into the APK
+def copyHud = tasks.register('copyHudAssets', Sync) {
+    into layout.buildDirectory.dir('hudAssets')
+    from(new File(repoRoot, 'public')) { into 'public'; exclude 'example-hud.jpg' }
+    from(new File(repoRoot, 'lib/normalize.js')) { into 'lib' }
+    from(new File(repoRoot, 'config.example.json'))
+    from(new File(repoRoot, 'samples')) { into 'samples'; include 'getState-dsd64-deacon-blues.json', 'demo-cover.jpg' }
+}
+tasks.named('preBuild') { dependsOn copyHud }
