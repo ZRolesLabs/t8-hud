@@ -1,11 +1,14 @@
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="600">
 
-## A proper remote menu, and an About screen
+## Font styles and bigger artist and album text
 
-- **Remote menu:** press any button on the remote and a small menu appears in the corner: **Settings · About · Exit**. Left and right move, OK picks, Back closes it. The HUD itself stays clean while music plays.
-- **About:** shows the version, update status, where the project lives, how to get in touch, and the licence. Un-enshittified: read-only, account-free, no ads, no tracking.
-- The **Menu** button, if your remote has one, still goes straight to Settings.
+Both came straight from a user's feedback. Thank you!
 
-**Updating:** if you already have v1.1.0, the app offers the update by itself (OK → Settings → Install update). New here? The README has the [5 steps, all with the remote](https://github.com/ZRolesLabs/t8-hud#google-tv-app).
+- **Artist and album size:** Standard, Large or Extra large. The title stays as it is, and long names still wrap onto a second line.
+- **Font:** four styles for the track title, artist and album, picked the same way as the colour palette. **Classic** (the default, unchanged), **Modern**, **Serif** and **Terminal**. The telemetry keeps its own font.
+- Both live under **Look** on the setup page (TV, phone or PC). **Preview HUD** shows them before you save.
+- The new fonts are bundled with the app, so the HUD still never goes online for them.
 
-Tested on a Google TV Streamer (Android TV 14) with an Eversolo T8 on firmware v1.6.15. Bugs and ideas go in the [issue forms](https://github.com/ZRolesLabs/t8-hud/issues/new/choose).
+**Updating:** the app offers the update by itself (OK → Settings → Install update). New here? The README has the [5 steps, all with the remote](https://github.com/ZRolesLabs/t8-hud#google-tv-app).
+
+Tested with an Eversolo T8 on firmware v1.6.15. Bugs and ideas go in the [issue forms](https://github.com/ZRolesLabs/t8-hud/issues/new/choose).

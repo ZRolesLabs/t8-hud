@@ -165,6 +165,8 @@ function cleanSettings(b) {
     }
     if ('animatePath' in d) out.display.animatePath = !!d.animatePath;
     const pick = (k, ok) => { if (k in d) out.display[k] = ok.includes(d[k]) ? d[k] : ok[0]; };
+    pick('font', ['classic', 'modern', 'serif', 'terminal']);
+    pick('textSize', ['standard', 'large', 'xlarge']);
     pick('beadShape', ['glow', 'dot', 'diamond', 'dash']);
     pick('beadColor', ['format', 'hardware', 'white']);
     pick('beadSize', ['medium', 'small', 'large']);

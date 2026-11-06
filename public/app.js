@@ -313,6 +313,9 @@ function connect() {
     pageBuild = cfg.build;
     setCustom(cfg.display.customColor);
     $('clock').hidden = cfg.display.showClock === false;
+    // track text: font style and artist/album size, both from the setup page
+    stage.dataset.font = ['modern', 'serif', 'terminal'].includes(cfg.display.font) ? cfg.display.font : 'classic';
+    stage.dataset.tsize = ['large', 'xlarge'].includes(cfg.display.textSize) ? cfg.display.textSize : 'standard';
     // the palette always comes from the setup page
     if (cfg.display.palette in PALETTES) palKey = cfg.display.palette;
     if (!palKey) palKey = 'cyber';

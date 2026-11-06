@@ -36,10 +36,18 @@ body.nocursor, body.nocursor * { cursor: none; }
 
 .info { display: grid; gap: 1.1cqw; min-width: 0; }
 .prov { font: 600 .85cqw/1.2 var(--f-body); text-transform: uppercase; letter-spacing: .18em; color: var(--accent); min-height: 1em; }
-.title { font: 800 4.6cqw/0.95 var(--f-display); letter-spacing: .01em; margin: 0; text-wrap: balance; text-transform: uppercase; overflow-wrap: anywhere; }
-.title.long { font-size: 3.4cqw; }
-.artist { font: 500 1.9cqw/1.1 var(--f-body); }
-.album { font: 400 1.1cqw/1.35 var(--f-body); color: var(--fg-2); }
+/* Track text: the font style and the artist/album size come from the setup page (stage data-font / data-tsize).
+   --title-k shrinks the title for wide fonts so long titles still wrap the way they do in the default. */
+.stage { --f-title: var(--f-display); --f-info: var(--f-body); --title-w: 800; --title-tt: uppercase; --title-k: 1; --info-k: 1; }
+.title { font: var(--title-w) calc(4.6cqw * var(--title-k))/0.95 var(--f-title); letter-spacing: .01em; margin: 0; text-wrap: balance; text-transform: var(--title-tt); overflow-wrap: anywhere; }
+.title.long { font-size: calc(3.4cqw * var(--title-k)); }
+.artist { font: 500 calc(1.9cqw * var(--info-k))/1.1 var(--f-info); }
+.album { font: 400 calc(1.1cqw * var(--info-k))/1.35 var(--f-info); color: var(--fg-2); }
+.stage[data-tsize=large] { --info-k: 1.2; }
+.stage[data-tsize=xlarge] { --info-k: 1.45; }
+.stage[data-font=modern] { --f-title: "Outfit", var(--f-body); --f-info: "Outfit", var(--f-body); --title-w: 700; --title-tt: none; --title-k: .82; }
+.stage[data-font=serif] { --f-title: "Playfair Display", Georgia, serif; --f-info: "Lora", Georgia, serif; --title-w: 700; --title-tt: none; --title-k: .8; }
+.stage[data-font=terminal] { --f-title: var(--f-mono); --f-info: var(--f-mono); --title-w: 600; --title-k: .66; }
 
 .progress { display: grid; grid-template-columns: auto 1fr auto; gap: 1cqw; align-items: center; font: 500 .95cqw/1 var(--f-mono); color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .bar { height: .35cqw; background: rgba(255,255,255,.1); border-radius: 1cqw; position: relative; overflow: hidden; }
@@ -101,7 +109,7 @@ body.nocursor, body.nocursor * { cursor: none; }
 .stage.eng .main { grid-template-columns: 17cqw 22cqw 1fr; }
 .stage.eng .art { width: 17cqw; }
 .stage.eng .raw { display: block; }
-.stage.eng .title { font-size: 3.2cqw; }
+.stage.eng .title { font-size: calc(3.2cqw * var(--title-k)); }
 
 .idle { position: absolute; inset: 0; display: none; place-content: center; text-align: center; gap: 1cqw; background: rgba(var(--ink-rgb), 0.8); z-index: 4; }
 .idle-t { font: 800 3.4cqw/1 var(--f-display); text-transform: uppercase; color: var(--fg-2); letter-spacing: .04em; }

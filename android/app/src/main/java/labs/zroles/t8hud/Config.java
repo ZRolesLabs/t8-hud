@@ -161,6 +161,8 @@ final class Config {
                 if (d.has("showDac")) o.put("showDac", d.optBoolean("showDac"));
             }
             if (d.has("animatePath")) o.put("animatePath", d.optBoolean("animatePath"));
+            pick(d, o, "font", "classic", "modern", "serif", "terminal");
+            pick(d, o, "textSize", "standard", "large", "xlarge");
             pick(d, o, "beadShape", "glow", "dot", "diamond", "dash");
             pick(d, o, "beadColor", "format", "hardware", "white");
             pick(d, o, "beadSize", "medium", "small", "large");

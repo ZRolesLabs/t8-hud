@@ -3,3 +3,7 @@
 @font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 700 800; font-display: swap; src: url(BigShouldersDisplay.woff2) format('woff2'); }
 @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(Archivo.woff2) format('woff2'); }
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(JetBrainsMono.woff2) format('woff2'); }
+/* Extra font styles for the setup page's "Font" picker (track title, artist and album only). */
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 300 800; font-display: swap; src: url(Outfit.woff2) format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 400 900; font-display: swap; src: url(PlayfairDisplay.woff2) format('woff2'); }
+@font-face { font-family: 'Lora'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(Lora.woff2) format('woff2'); }
