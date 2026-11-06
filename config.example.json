@@ -31,6 +31,8 @@
   },
   "display": {
     "palette": "cyber",
+    "font": "classic",
+    "textSize": "standard",
     "eqLabel": "EQ",
     "eqNote": "active",
     "nightAfterIdleMinutes": 10,

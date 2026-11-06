@@ -44,6 +44,7 @@ button.icon { padding: 8px 10px; min-width: 38px; }
 .src-key { font: 600 13px/1 var(--f-mono); color: var(--accent); align-self: center; padding-bottom: 12px; }
 .pal { display: flex; gap: 8px; flex-wrap: wrap; }
 .pal button[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.fontpick .aa { font-size: 19px; margin-right: 8px; line-height: 1; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .check { display: flex; gap: 8px; align-items: center; text-transform: none; font: 400 15px/1.2 var(--f-body); color: var(--fg); letter-spacing: 0; }
 .preview { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center; padding: 14px; background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; margin-top: 6px; }
@@ -72,6 +73,8 @@ select { width: 100%; background: var(--ink); color: var(--fg); border: 1px soli
 }
 [hidden] { display: none !important; }
 button:disabled { opacity: .45; cursor: not-allowed; }
+h3.sub { font: 600 12px/1 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--fg-2); margin: 20px 0 8px; }
+.pal + .hint, h3.sub + .hint { margin: 0 0 10px; }
 details.extras { margin-top: 8px; border: 1px solid var(--rule); border-radius: 10px; padding: 12px 16px; }
 details.extras > summary { cursor: pointer; font-weight: 600; color: var(--fg-2); }
 details.extras[open] > summary { margin-bottom: 14px; }
@@ -122,6 +125,11 @@ details.extras[open] > summary { margin-bottom: 14px; }
       <label>Custom colour<input type="color" id="custom" value="#ff2bd6" style="height:44px;padding:4px"></label>
       <p class="hint" style="align-self:end;margin:0">One colour for the highlights, the progress bar and the telemetry frame, whatever the format.</p>
     </div>
+    <h3 class="sub">Font</h3>
+    <p class="hint">The lettering for the track title, artist and album. The telemetry keeps its own font.</p>
+    <div class="pal fontpick" id="fontPick"></div>
+    <h3 class="sub">Artist and album size</h3>
+    <div class="pal" id="sizePick"></div>
     <div class="two" style="margin-top:14px">
       <label>Night mode after idle (minutes, 0 = never)<input type="number" id="night" min="0" max="600"></label>
       <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label></div>
@@ -172,7 +180,10 @@ details.extras[open] > summary { margin-bottom: 14px; }
 'use strict';
 const $ = id => document.getElementById(id);
 const PAL = { cyber: ['Cyberpunk', '#c86bff'], amber: ['Studio amber', '#f2a541'], mono: ['Mono', '#e0e0e0'], custom: ['Custom', null] };
-let st = null, palette = 'cyber', sources = {};
+// font styles for the track text (the HUD's style.css has the matching data-font rules)
+const FONTS = { classic: ['Classic', '"Big Shoulders Display", sans-serif', 800], modern: ['Modern', 'Outfit, sans-serif', 700], serif: ['Serif', '"Playfair Display", serif', 700], terminal: ['Terminal', '"JetBrains Mono", monospace', 600] };
+const SIZES = { standard: 'Standard', large: 'Large', xlarge: 'Extra large' };
+let st = null, palette = 'cyber', font = 'classic', textSize = 'standard', sources = {};
 
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function msg(t, k) { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (k || ''); }
@@ -203,6 +214,8 @@ async function load() {
   const beadsUi = () => { for (const el of $('beads').querySelectorAll('select')) el.disabled = !$('animOn').checked; $('beads').style.opacity = $('animOn').checked ? 1 : .45; };
   $('animOn').onchange = beadsUi; beadsUi();
   palette = st.display.palette || 'cyber';
+  font = st.display.font in FONTS ? st.display.font : 'classic';
+  textSize = st.display.textSize in SIZES ? st.display.textSize : 'standard';
   sources = { ...(st.sources || {}) };
   for (const k of st.seenSources || []) if (!sources[k]) sources[k] = { name: '', note: '' };
   $('chain').innerHTML = '';
@@ -211,7 +224,7 @@ async function load() {
   $('dacTitle').value = (st.dacWindow && st.dacWindow.title) || '';
   $('dac').innerHTML = '';
   for (const i of (st.dacWindow && st.dacWindow.items) || []) addDac(i.label, i.value);
-  renderSources(); renderPal(); status(); preview();
+  renderSources(); renderPal(); renderType(); status(); preview();
 }
 
 function status() {
@@ -302,6 +315,25 @@ function renderPal() {
   $('customRow').hidden = palette !== 'custom';
 }
 
+function renderType() {
+  $('fontPick').innerHTML = '';
+  for (const [k, [name, fam, w]] of Object.entries(FONTS)) {
+    const b = document.createElement('button');
+    b.setAttribute('aria-pressed', k === font);
+    b.innerHTML = `<span class="aa" style="font-family:${esc(fam)};font-weight:${w}">Aa</span>${name}`;
+    b.onclick = () => { font = k; renderType(); };
+    $('fontPick').appendChild(b);
+  }
+  $('sizePick').innerHTML = '';
+  for (const [k, name] of Object.entries(SIZES)) {
+    const b = document.createElement('button');
+    b.setAttribute('aria-pressed', k === textSize);
+    b.textContent = name;
+    b.onclick = () => { textSize = k; renderType(); };
+    $('sizePick').appendChild(b);
+  }
+}
+
 function refreshFrom() {
   const rows = [...$('chain').children];
   const gear = rows.filter(r => !r.dataset.from && r.dataset.kind !== 'link').map(r => r.querySelector('.m').value.trim()).filter(Boolean);
@@ -361,12 +393,12 @@ $('find').onclick = async () => {
 };
 
 function formDisplay() {
-  return { palette, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
+  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
 }
 // Preview: the HUD with a sample track, drawn with what's on this page right now (saved or not)
 $('previewBtn').onclick = () => {
   const d = formDisplay();
-  const pick = { palette: d.palette, customColor: d.customColor, showClock: d.showClock, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
+  const pick = { palette: d.palette, font: d.font, textSize: d.textSize, customColor: d.customColor, showClock: d.showClock, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
   window.open('/?preview=' + encodeURIComponent(JSON.stringify(pick)), 't8hud-preview');
 };
 $('liveBtn').onclick = () => { if (!$('liveBtn').disabled) window.open('/', 't8hud-live'); };
