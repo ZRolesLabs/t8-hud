@@ -50,9 +50,16 @@ jobs:
       - name: Build the APK
         env:
           T8HUD_KEYSTORE_PASSWORD: ${{ secrets.T8HUD_KEYSTORE_PASSWORD }}
-          T8HUD_VERSION_SUFFIX: ${{ env.IS_RELEASE == 'true' && '' || format('-dev.{0}', github.run_number) }}
-          T8HUD_BUILD_NUMBER: ${{ env.IS_RELEASE == 'true' && '999' || github.run_number }}
-        run: gradle -p android assembleRelease --no-daemon --stacktrace
+          RUN_NUMBER: ${{ github.run_number }}
+        # Set the version suffix in the shell: in an expression, `cond && '' || x` always gives x
+        # because '' is falsy, which stamped releases as 1.x.y-dev.N.
+        run: |
+          if [ "$IS_RELEASE" = "true" ]; then
+            export T8HUD_VERSION_SUFFIX="" T8HUD_BUILD_NUMBER=999
+          else
+            export T8HUD_VERSION_SUFFIX="-dev.$RUN_NUMBER" T8HUD_BUILD_NUMBER="$RUN_NUMBER"
+          fi
+          gradle -p android assembleRelease --no-daemon --stacktrace
       - run: cp android/app/build/outputs/apk/release/app-release.apk t8-hud.apk
       - uses: actions/upload-artifact@v4
         with:
