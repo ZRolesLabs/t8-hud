@@ -19,6 +19,10 @@ const brackets = (w,h,m,l,c='#c86bff',sw=8) => `<g stroke="${c}" stroke-width="$
 <path d="M${m} ${m+l} V${m} H${m+l}"/><path d="M${w-m-l} ${m} H${w-m} V${m+l}"/><path d="M${m} ${h-m-l} V${h-m} H${m+l}"/><path d="M${w-m-l} ${h-m} H${w-m} V${h-m-l}"/></g>`;
 const wave = (x,y,w,amp) => { let d=`M${x} ${y}`; const n=24; for(let i=1;i<=n;i++){const px=x+w*i/n; const a=amp*Math.sin(i*1.3)*Math.sin(i/n*Math.PI); d+=` L${px.toFixed(1)} ${(y-Math.abs(a)).toFixed(1)} L${px.toFixed(1)} ${(y+Math.abs(a)).toFixed(1)} L${px.toFixed(1)} ${y}`;} return d; };
 
+// ZRolesLabs app badge (the standard for every Labs launcher icon): cyan pill under the flask, same as Labs Browser "WEB".
+// 78 tall, centred at (256,404) on the 512 canvas, width fits the label. blockbuZter uses the same colours in a ticket shape.
+const badge = (cx,cy,w,h,label) => `<g filter="url(#glowS)"><rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="${h/2}" fill="#06222a" stroke="#33e6ff" stroke-width="5"/>
+ <text x="${cx}" y="${cy+h*0.2}" text-anchor="middle" font-family="JBM" font-weight="700" font-size="${h*0.52}" letter-spacing="10" fill="#33e6ff">${label}</text></g>`;
 const icons = {
  A: `<svg viewBox="0 0 512 512">${defs}<rect width="512" height="512" fill="url(#bg)"/>
    ${brackets(512,512,70,60)}
@@ -28,8 +32,7 @@ const icons = {
    <path d="${wave(126,375,220,34)}" stroke="#c86bff" stroke-width="6" fill="none" filter="url(#glowS)"/>
    ${flask(372,330,0.42)}</svg>`,
  C: `<svg viewBox="0 0 512 512">${defs}<rect width="512" height="512" fill="url(#bg)"/>
-   ${flaskWave(256,236,0.95)}
-   <text x="262" y="420" text-anchor="middle" font-family="JBM" font-weight="700" font-size="54" letter-spacing="16" fill="#3fe0ff" filter="url(#glowS)">T8 HUD</text></svg>`
+   ${flaskWave(256,236,0.95)}${badge(256,404,300,78,'T8 HUD')}</svg>`
 };
 const banners = {
  A: `<svg viewBox="0 0 320 180">${defs}<rect width="320" height="180" fill="url(#bg)"/>${brackets(320,180,10,22,'#c86bff',3)}
