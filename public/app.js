@@ -24,7 +24,24 @@ const store = {
 
 let cfg = { chain: [], display: { palette: 'cyber', eqLabel: 'Room EQ', eqNote: '', nightAfterIdleMinutes: 10, showStats: false, showChain: false, showDac: false } };
 let S = null;              // latest normalized state from the bridge
-let recvAt = 0;            // when it arrived (for playhead interpolation)
+let recvAt = 0;            // when it arrived
+// Playhead: a local clock that runs between T8 reports. Each report is jittery (poll timing, network, and the T8
+// sometimes repeats a stale position), so small differences are blended in gently and the bar never steps
+// backwards; only a real jump (seek, new track, pause/resume) snaps it.
+const ph = { key: '', base: 0, at: 0, shown: 0, lastRaw: -1, playing: false };
+function phNow(t) { return ph.playing ? ph.base + (t - ph.at) : ph.base; }
+function phReport(st, t) {
+  const key = st.track ? `${st.track.id}|${st.track.title}|${st.duration}` : '';
+  const playing = st.state === 'playing', raw = st.position || 0;
+  const pred = phNow(t), diff = raw - pred;
+  if (key !== ph.key || playing !== ph.playing || Math.abs(diff) > 3000) {
+    Object.assign(ph, { key, base: raw, at: t, shown: raw, lastRaw: raw, playing });   // real jump: snap
+    return;
+  }
+  if (playing && raw === ph.lastRaw) return;                 // stale repeat from the T8: keep our own clock
+  ph.lastRaw = raw;
+  ph.base = pred + diff * 0.25; ph.at = t;                     // drift: ease a quarter of the way per report
+}
 let palKey = null, mode = 'show';
 let lastPlayingAt = Date.now();
 let artId = null;
@@ -247,7 +264,9 @@ let pulseX = 0, lastFrame = performance.now();
 function frame(now) {
   const dt = Math.min(100, now - lastFrame); lastFrame = now;
   if (S && S.track) {
-    const pos = S.state === 'playing' ? Math.min(S.duration, S.position + (Date.now() - recvAt)) : S.position;
+    let pos = Math.max(0, Math.min(S.duration || 0, phNow(Date.now())));
+    if (ph.playing) pos = ph.shown = Math.max(ph.shown, pos);  // never step backwards while playing
+    else ph.shown = pos;
     $('pos').textContent = mmss(pos);
     $('dur').textContent = '-' + mmss(S.duration - pos);
     $('bar').style.transform = `scaleX(${S.duration ? pos / S.duration : 0})`;
@@ -313,6 +332,7 @@ function connect() {
     pageBuild = cfg.build;
     setCustom(cfg.display.customColor);
     $('clock').hidden = cfg.display.showClock === false;
+    $('sig').hidden = cfg.display.showFlask !== true; // maker's mark, off unless switched on in /setup
     // track text: font style and artist/album size, both from the setup page
     stage.dataset.font = ['modern', 'serif', 'terminal'].includes(cfg.display.font) ? cfg.display.font : 'classic';
     stage.dataset.tsize = ['large', 'xlarge'].includes(cfg.display.textSize) ? cfg.display.textSize : 'standard';
@@ -325,7 +345,7 @@ function connect() {
     if (lastStats) renderStats(lastStats);
   });
   es.addEventListener('state', e => {
-    S = JSON.parse(e.data); recvAt = Date.now();
+    S = JSON.parse(e.data); recvAt = Date.now(); phReport(S, recvAt);
     if (S.state === 'playing') lastPlayingAt = Date.now();
     render(); applyMode();
   });

@@ -156,6 +156,7 @@ function cleanSettings(b) {
     if ('eqNote' in d) out.display.eqNote = str(d.eqNote);
     if ('showEq' in d) out.display.showEq = !!d.showEq;
     if ('showClock' in d) out.display.showClock = !!d.showClock;
+    if ('showFlask' in d) out.display.showFlask = !!d.showFlask;
     if ('customColor' in d && /^#[0-9a-f]{6}$/i.test(d.customColor)) out.display.customColor = d.customColor.toLowerCase();
     if ('nightAfterIdleMinutes' in d) out.display.nightAfterIdleMinutes = Math.max(0, Math.min(600, Math.round(Number(d.nightAfterIdleMinutes) || 0)));
     if (cfg.labs) {
