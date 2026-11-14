@@ -217,7 +217,7 @@ It only changes how the HUD looks. Nothing you do here changes a setting on your
 - **Your T8:** its address, and a **Find my T8** button that scans your network.
 - **Sources:** friendlier names for the source the T8 reports. For example, `LOCAL` can show as "T8 SSD", or `TIDAL Connect` as "TIDAL". A source appears in the list once the T8 has played from it, and stays there (it's remembered in `config.json`, so restarts and updates don't lose it).
 - **EQ:** the T8 only reports whether its EQ is on or off, and the status chip shows that ("EQ on" / "EQ off"). You can rename the label and add a short note of your own. Untick **Show the EQ chip** to hide it.
-- **Look:** the palette (Cyberpunk, Studio amber, Mono, or **Custom** with a colour you pick), the font for the track title, artist and album (Classic, Modern, Serif or Terminal), the artist and album size (Standard, Large or Extra large), night mode timing, and **Show the clock**.
+- **Look:** the palette (Cyberpunk, Studio amber, Mono, or **Custom** with a colour you pick), the font for the track title, artist and album (Classic, Modern, Serif or Terminal), the artist and album size (Standard, Large or Extra large), night mode timing, **Show the clock**, and an optional ZRolesLabs flask signature in the bottom corner (off by default).
 
 At the bottom of the page:
 

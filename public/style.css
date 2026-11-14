@@ -129,3 +129,12 @@ body.nocursor, body.nocursor * { cursor: none; }
 @media (prefers-reduced-motion: reduce) { .art { animation: none; } .night .drift, .hud { transition: none; } }
 
 .chain[hidden], .stats:empty { display: none; }
+
+/* Maker's mark (display.showFlask, off by default): the ZRolesLabs flask signed small, bottom right, as the last
+   column of the foot row so it stays inside the TV-safe padding and never sits on the stats or the DAC window. */
+.foot:has(> .sig:not([hidden])) { grid-template-columns: 1fr auto auto; }
+.foot .sig { grid-column: 3; grid-row: 1; justify-self: end; align-self: end; display: flex; align-items: center; gap: .55cqw; opacity: .8; }
+.sig svg { height: 2.1cqw; width: auto; display: block; }
+.sig span { font: 500 .7cqw/1 var(--f-mono); letter-spacing: .08em; color: var(--fg-3); }
+.sig b { color: #33e6ff; font-weight: 700; }
+.foot:has(> .sig:not([hidden])) > .stats:empty + .dacwin { grid-column: 1 / 3; }

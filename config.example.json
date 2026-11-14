@@ -46,6 +46,7 @@
     "beadSpeed": "normal",
     "showDac": false,
     "showClock": true,
+    "showFlask": false,
     "customColor": "#ff2bd6"
   }
 }

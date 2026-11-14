@@ -132,7 +132,7 @@ details.extras[open] > summary { margin-bottom: 14px; }
     <div class="pal" id="sizePick"></div>
     <div class="two" style="margin-top:14px">
       <label>Night mode after idle (minutes, 0 = never)<input type="number" id="night" min="0" max="600"></label>
-      <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label></div>
+      <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label><label class="check"><input type="checkbox" id="flaskOn"> Sign it with the ZRolesLabs flask</label></div>
     </div>
   </section>
   <details class="extras" id="extras" hidden>
@@ -201,6 +201,7 @@ async function load() {
   $('eqOn').onchange = eqUi; eqUi();
   $('night').value = st.display.nightAfterIdleMinutes ?? 10;
   $('clockOn').checked = st.display.showClock !== false;
+  $('flaskOn').checked = st.display.showFlask === true;
   $('custom').value = st.display.customColor || '#ff2bd6';
   $('custom').oninput = renderPal;
   $('extras').hidden = !st.labs; // release 1: chain, DAC window and stats are a hand-enabled labs extra
@@ -393,12 +394,12 @@ $('find').onclick = async () => {
 };
 
 function formDisplay() {
-  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
+  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, showFlask: $('flaskOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
 }
 // Preview: the HUD with a sample track, drawn with what's on this page right now (saved or not)
 $('previewBtn').onclick = () => {
   const d = formDisplay();
-  const pick = { palette: d.palette, font: d.font, textSize: d.textSize, customColor: d.customColor, showClock: d.showClock, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
+  const pick = { palette: d.palette, font: d.font, textSize: d.textSize, customColor: d.customColor, showClock: d.showClock, showFlask: d.showFlask, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
   window.open('/?preview=' + encodeURIComponent(JSON.stringify(pick)), 't8hud-preview');
 };
 $('liveBtn').onclick = () => { if (!$('liveBtn').disabled) window.open('/', 't8hud-live'); };

@@ -153,6 +153,7 @@ final class Config {
             if (d.has("eqNote")) o.put("eqNote", str(d.opt("eqNote")));
             if (d.has("showEq")) o.put("showEq", d.optBoolean("showEq"));
             if (d.has("showClock")) o.put("showClock", d.optBoolean("showClock"));
+            if (d.has("showFlask")) o.put("showFlask", d.optBoolean("showFlask"));
             if (d.has("customColor") && COLOR.matcher(d.optString("customColor")).matches()) o.put("customColor", d.optString("customColor").toLowerCase());
             if (d.has("nightAfterIdleMinutes")) o.put("nightAfterIdleMinutes", Math.max(0, Math.min(600, (int) Math.round(d.optDouble("nightAfterIdleMinutes", 0)))));
             if (cfg.optBoolean("labs")) {
