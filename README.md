@@ -2,18 +2,18 @@
 
 # T8 HUD
 
-An un-enshittified, read-only, account-free “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only things it ever fetches from the internet are cover art for streamed tracks, from the streaming service’s own image server, and (in the Google TV app) a check for new versions on GitHub.
+An un-enshittified, read-only, account-free “now playing” telemetry display for the Eversolo T8 streaming transport. No subscriptions, no sign-ups, no corporate servers sniffing your listening habits, no sudden UI “upgrades” that break your workflow. Just pure, unfiltered stats straight from your T8, running on your own network. The only things it ever fetches from the internet are cover art for streamed tracks, from the streaming service’s own image server, and (in the Google TV app) a check for new versions on GitHub. Lyrics are optional and off by default; looking them up online is a second switch that is also off by default (see **[Lyrics](#lyrics)**).
 
 ![T8 HUD on a TV](docs/screenshot.png)
 
-Big cover art and deep, live telemetry: the real stream format (DSD64 · 2.8224 MHz · 1-bit · 5.645 Mbps), container, bit depth, channels, bitrate, what the T8 is outputting and on which interface, whether the output rate matches the source, volume lock, and EQ / DSP / MQA state. It works with local files and with streaming: TIDAL in the T8's own app, TIDAL Connect, and other connect and network sources the T8 reports.
+Big cover art and deep, live telemetry: the real stream format (DSD64 · 2.8224 MHz · 1-bit · 5.645 Mbps), container, bit depth, channels, bitrate, what the T8 is outputting and on which interface, whether the output rate matches the source, volume lock, and EQ / DSP / MQA state. New in version 3: **lyrics**, lit line by line in time with the music, if you want them. It works with local files and with streaming: TIDAL in the T8's own app, TIDAL Connect, and other connect and network sources the T8 reports.
 
 It comes two ways:
 
 - **Google TV app:** install it on your Google TV or Android TV and you're done. It talks to the T8 directly, so there's no computer to leave running. See **[Google TV app](#google-tv-app)**.
 - **Browser version:** a tiny server on an always-on computer (Windows, Mac, Linux or a Raspberry Pi), and any web browser shows the HUD: a TV, tablet, phone or laptop. See **[Quick start](#quick-start)**.
 
-Both show the same screen: cover art, track info, telemetry and a clock. More is on the way (see **Coming later**).
+Both show the same screen: cover art, track info, telemetry, a clock and (if you switch them on) lyrics. More is on the way (see **Coming later**).
 
 **Everything on screen is real.** It's either reported by the T8 or typed in by you. There are no fake level meters or invented specs.
 
@@ -63,7 +63,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
 
 ### Using it
 
-- **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small menu appears in the corner: **Settings · About · Exit**. Move along it with left and right, press **OK** to pick. **About** shows the version, where the project lives and how to get in touch. **Back** closes the menu, and Back on the HUD closes the app. The **Menu** button, if your remote has one, goes straight to Settings.
+- **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small menu appears in the corner: **Settings · Lyrics · About · Exit**. Move along it with left and right, press **OK** to pick. **Lyrics** switches the lyrics on or off right there, without leaving the HUD. **About** shows the version, where the project lives and how to get in touch. **Back** closes the menu, and Back on the HUD closes the app. The **Menu** button, if your remote has one, goes straight to Settings.
 - **Set it up from your phone.** Typing with a remote is slow, so the setup page shows a QR code. Point your phone camera at it and tap the link, and the same setup page opens on your phone. You can also type the address shown next to it, such as `http://192.168.1.20:8080/setup`, into any browser on the same network. Changes you save on the phone show on the TV straight away.
 
 <p>
@@ -71,7 +71,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
 <img src="docs/tv/phone-setup.png" alt="The same setup page on a phone" width="220">
 </p>
 
-- **Updates:** the app checks GitHub for a new version every so often. That's the only thing it contacts outside your home, apart from cover art. When one is out, the HUD mentions it briefly and the setup page shows an **Install update** button. The first time, Android asks you to allow T8 HUD to install apps: say yes. Your settings stay as they are.
+- **Updates:** the app checks GitHub for a new version every so often. That's the only thing it contacts outside your home, apart from cover art and, only if you switch it on, the lyrics lookup. When one is out, the HUD mentions it briefly and the top of the setup page says **Update ready** with an **Install update** button, already selected on the TV: press OK. The first time, Android asks you to allow T8 HUD to install apps: say yes. Your settings stay as they are.
 - **The T8 is never touched:** like the browser version, the app only reads from the T8.
 - **Pin it:** in "Your apps", hold OK on T8 HUD and choose **Move**, to put it at the front.
 
@@ -81,7 +81,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
 - An always-on computer on the same network (Windows, Mac, Linux or a Raspberry Pi) with **Node.js 18 or newer**. It doesn't need to be your main PC: the HUD uses almost no CPU, so an old laptop, a mini PC in the media cabinet or a Raspberry Pi is plenty.
 - A TV, TV box, tablet or phone with a web browser (for example TV Bro on Google TV, the TV's own built-in browser, or a tablet's browser)
 
-There are no npm packages and no accounts, and the fonts are bundled. The only internet request is cover art for streamed tracks: the T8 hands over the streaming service's own cover link (for TIDAL, `resources.tidal.com`), and the HUD fetches that picture once and caches it. Local files get their cover straight from the T8.
+There are no npm packages and no accounts, and the fonts are bundled. Out of the box, the only internet request is cover art for streamed tracks: the T8 hands over the streaming service's own cover link (for TIDAL, `resources.tidal.com`), and the HUD fetches that picture once and caches it. Local files get their cover straight from the T8. The optional online lyrics lookup is described under **[Lyrics](#lyrics)**.
 
 ## Works with
 
@@ -206,9 +206,35 @@ screen goes dark, page freezes), check the README's Troubleshooting
 section first, then ask me to paste the exact output before guessing.
 ```
 
+## Lyrics
+
+<img src="docs/lyrics.png" alt="The HUD with lyrics: three lines under the album name, the line being sung lit up" width="800">
+
+Switch on **Show lyrics** on the setup page (or **Lyrics** in the Google TV app's remote menu) and the words appear under the album name: three lines, with the line being sung full size and lit in the format colour. Everything else stays where it was. A track with no lyrics looks exactly as it always has. Lyrics are **off by default**.
+
+Where the words come from, in this order:
+
+1. **The T8 itself.** For tracks in its own library, the T8 can already have a lyric (it says so in its status, and the Eversolo app shows the same one). The HUD asks the T8 for it over the same read-only local API as everything else. Nothing leaves your home network. The label says **Lyrics · from the T8**.
+2. **LRCLIB, only if you tick “Look up missing lyrics on LRCLIB”.** [LRCLIB](https://lrclib.net) is a free, open-source lyrics database that needs no account and no key. This is **off by default**, and it's the only way lyrics ever touch the internet. When it's on:
+   - A lookup sends the track's **title, artist, album and length**, and nothing else: no ID, no cookies, no account. As with any website, their server sees your internet address.
+   - It's only asked about tracks the T8 has no lyric for, and each answer is kept by the HUD (in `data/lyrics/` for the browser version, in the app's own storage on a TV), so **a track is only ever asked for once**. “Nothing found” is asked again after a week.
+   - The label says **Lyrics · LRCLIB**.
+
+What you see is honest, like the rest of the HUD:
+
+- **Timed lyrics** follow the music line by line. Three dots fill up during a break in the singing, so you can see the next line coming.
+- Timed lyrics are only used when they were made for a recording of the same length (within 3 seconds). If the only lyrics found are for a different cut, or have no timing at all, the words are shown as plain text that rolls slowly with the track, labelled **not timed**.
+- No lyrics found, an instrumental, a radio stream with no artist: no lyrics block. The HUD never invents words or timing.
+
+Words landing a beat early or late on your system? **Timing nudge** on the setup page shifts them (try 300 or -300 milliseconds).
+
+The lyric lines in the screenshots here are sample lines written for the preview, not the words of the song on screen. The **Preview HUD** button uses the same sample lines.
+
+Running your own copy of LRCLIB? In the browser version, add `"lyricsServer": "http://your-server:port"` to `config.json` and lookups go there instead.
+
 ## The setup page
 
-<img src="docs/setup.png" alt="The T8 HUD setup page: the TV address, your T8, sources, EQ and look" width="480">
+<img src="docs/setup.png" alt="The T8 HUD setup page: the TV address, your T8, sources, EQ, look and lyrics" width="480">
 
 Open it on the computer running the HUD at `http://localhost:8080/setup`, or from any phone or PC at home using the address the HUD printed when it started. The top of the page shows the address to type on your TV.
 
@@ -218,10 +244,11 @@ It only changes how the HUD looks. Nothing you do here changes a setting on your
 - **Sources:** friendlier names for the source the T8 reports. For example, `LOCAL` can show as "T8 SSD", or `TIDAL Connect` as "TIDAL". A source appears in the list once the T8 has played from it, and stays there (it's remembered in `config.json`, so restarts and updates don't lose it).
 - **EQ:** the T8 only reports whether its EQ is on or off, and the status chip shows that ("EQ on" / "EQ off"). You can rename the label and add a short note of your own. Untick **Show the EQ chip** to hide it.
 - **Look:** the palette (Cyberpunk, Studio amber, Mono, or **Custom** with a colour you pick), the font for the track title, artist and album (Classic, Modern, Serif or Terminal), the artist and album size (Standard, Large or Extra large), night mode timing, **Show the clock**, and an optional ZRolesLabs flask signature in the bottom corner (off by default).
+- **Lyrics:** **Show lyrics**, the separate **Look up missing lyrics on LRCLIB** switch, and a timing nudge. Both switches are off by default. See **[Lyrics](#lyrics)**.
 
 At the bottom of the page:
 
-- **Preview HUD** opens the HUD with a sample track, drawn with the settings on the page right now, before you save. It's labelled PREVIEW so nobody mistakes it for your T8.
+- **Preview HUD** opens the HUD with a sample track, drawn with the settings on the page right now, before you save. It's labelled PREVIEW so nobody mistakes it for your T8. With lyrics ticked, the preview shows sample lines (labelled as such), so you can see how they look without anything being looked up.
 - **Open live HUD** opens the real thing. It's greyed out until the T8 answers.
 
 Changes only save from devices on your own network. Every open screen updates within a second.
@@ -237,7 +264,7 @@ Any browser on your home network can show the HUD at `http://<computer-IP>:8080`
 
 ## On the TV
 
-Every setting lives on the setup page, so there are no remote-control shortcuts to learn (TV browsers all handle remote keys differently). After a while with nothing playing, the page goes to Night by itself. It also shifts a few pixels every few minutes to protect OLED panels. If the computer reboots or the network blips, the page reconnects by itself, and it reloads by itself after you update the HUD.
+In the browser version every setting lives on the setup page, so there are no remote-control shortcuts to learn (TV browsers all handle remote keys differently). After a while with nothing playing, the page goes to Night by itself. It also shifts a few pixels every few minutes to protect OLED panels. If the computer reboots or the network blips, the page reconnects by itself, and it reloads by itself after you update the HUD.
 
 ## Run it at boot (Windows)
 
@@ -336,6 +363,7 @@ From `getState` (firmware v1.6.15): track, artist, album, container, codec, samp
 
 - **The T8's own player** (`playType` 5: local files and in-app TIDAL/Qobuz): the track is in `playingMusic`. Local covers come from `getImage?id=<id>&musicType=0&type=0&target=16` as a 1500 × 1500 JPEG; streamed tracks carry their own `albumArt` link. The T8 labels in-app streaming as `LOCAL`, so the HUD reads the service from the stream's own fields (`streamId`, `streamUrl`).
 - **Connect sources** (`playType` 6, e.g. "Tidal connect", "Spotify connect"; AirPlay, Bluetooth): the live track is in `everSoloPlayInfo.everSoloPlayAudioInfo`, with the cover in `everSoloPlayInfo.icon`. `playingMusic` still holds the last in-app track, so the HUD ignores it.
+- **Lyrics:** `getState` carries `hasLyric`. When it's true, `getLyric?id=<id>&type=<type>&duration=<duration>&number=<track number>` (the values straight from `getState`, as the Eversolo app sends them) returns the lyric file itself as LRC text. Connect sources have no library id, so the T8 has no lyric for them.
 - `/api/raw` on the HUD shows the T8's last answer exactly as sent.
 
 It does **not** expose audio levels or which drive a file is on, so the HUD doesn't pretend to show them.
@@ -365,8 +393,8 @@ Open an issue: **[Report a bug, ask a question, or suggest an idea](https://gith
 ## Development
 
 ```
-npm test                 # checks the payload normaliser
-node test/fake-t8.js     # a stand-in T8 on port 19529 for testing (SAMPLE=tidal for TIDAL Connect)
+npm test                 # checks the payload normaliser and the lyrics logic
+node test/fake-t8.js     # a stand-in T8 on port 19529 for testing (SAMPLE=tidal for TIDAL Connect, LYRICS=1 to serve a lyric)
 node server.js --demo    # replay a recorded T8
 ```
 

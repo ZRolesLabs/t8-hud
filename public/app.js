@@ -137,6 +137,8 @@ function render() {
   renderChain();
   renderDac();
   renderRaw();
+  renderLyrics();
+  fitLyrics();
   $('n-title').textContent = `${t.title} · ${t.artist}`;
   $('n-rate').textContent = f.family === 'dsd' ? `${f.codecLabel} · ${fmtHz(f.rateHz)}` : f.family === 'lossy' ? `${f.codecLabel} · ${Math.round(f.kbps)} kbps` : `${f.bits}-bit / ${fmtHz(f.rateHz)}`;
   loadArt();
@@ -220,6 +222,90 @@ function renderDac() {
   if (box.innerHTML !== html) box.innerHTML = html;
 }
 
+// ---------- lyrics ----------
+// The bridge (or the TV app) looks the words up and sends them once per track; the page only draws them.
+// Synced lyrics follow the playhead line by line. Lyrics without timing are shown as plain text that rolls
+// with the track and says "not timed". No lyrics for the track: the block is simply not there.
+let LY = null;   // { track: { title, artist, duration }, kind: 'synced' | 'plain' | ..., source, lines: [{ t, text }] }
+const ly = { sig: '', kind: '', rows: [], idx: -2, y: null, checked: 0 };
+const LY_SOURCE = { t8: 'from the T8', lrclib: 'LRCLIB', sample: 'sample lines' };
+const LY_GAP_MS = 7000; // a pause this long gets the dots; shorter ones just hold the last line
+const sameSec = (a, b) => Math.round((a || 0) / 1000) === Math.round((b || 0) / 1000);
+function lyricsNow() {
+  if (cfg.display.showLyrics !== true || !S || !S.track || !LY || !LY.track || !LY.lines || !LY.lines.length) return null;
+  if (LY.kind !== 'synced' && LY.kind !== 'plain') return null;
+  return LY.track.title === S.track.title && LY.track.artist === S.track.artist && sameSec(LY.track.duration, S.duration) ? LY : null;
+}
+function renderLyrics() {
+  const L = lyricsNow();
+  const sig = L ? [L.kind, L.source, L.track.title, L.track.artist, Math.round(L.track.duration / 1000), L.lines.length].join('|') : '';
+  if (sig === ly.sig) return;
+  Object.assign(ly, { sig, kind: L ? L.kind : '', rows: [], idx: -2, y: null });
+  $('lyrics').hidden = !L;
+  stage.classList.toggle('has-lyrics', !!L);
+  if (!L) { $('lyroll').innerHTML = ''; return; }
+  const end = S.duration || 0;
+  if (L.kind === 'synced') {
+    const lines = L.lines;
+    if (lines[0].t >= LY_GAP_MS) ly.rows.push({ t: 0, gap: true });
+    lines.forEach((l, i) => {
+      if (l.text) ly.rows.push({ t: l.t, text: l.text });
+      else if ((lines[i + 1] ? lines[i + 1].t : end) - l.t >= LY_GAP_MS) ly.rows.push({ t: l.t, gap: true });
+    });
+    ly.rows.forEach((r, i) => { r.end = ly.rows[i + 1] ? ly.rows[i + 1].t : Math.max(end, r.t); });
+  } else ly.rows = L.lines.map(l => ({ text: l.text }));
+  $('lyk').innerHTML = `Lyrics · <b>${esc(LY_SOURCE[L.source] || L.source || '')}</b>${L.kind === 'plain' ? ' · not timed' : ''}`;
+  $('lywin').classList.toggle('plain', L.kind === 'plain');
+  $('lyroll').style.transform = '';
+  $('lyroll').innerHTML = ly.rows.map(r => r.gap ? '<div class="ly-line gap"><i></i><i></i><i></i></div>' : `<div class="ly-line">${esc(r.text)}</div>`).join('');
+}
+// A long title in extra-large lettering can leave too little room for three lines: then only the line being
+// sung is shown, so the telemetry never gets pushed off the screen.
+let lyFitSig = '';
+function fitLyrics() {
+  const sig = ly.sig && [ly.sig, $('title').textContent, stage.dataset.font, stage.dataset.tsize, stage.className.replace(/\s*ly-compact/, ''), stage.clientWidth, $('flags').childElementCount].join('|');
+  if (sig === lyFitSig) return;
+  lyFitSig = sig;
+  stage.classList.remove('ly-compact');
+  if (!sig) return;
+  const main = document.querySelector('.main'), info = document.querySelector('.info');
+  if (info.offsetHeight > main.clientHeight + 1) stage.classList.add('ly-compact');
+  ly.checked = 0; // re-centre the line in its new window
+}
+// called every frame with the playhead (ms)
+function lyricsFrame(pos, now) {
+  if (!ly.sig) return;
+  const win = $('lywin'), roll = $('lyroll'), els = roll.children;
+  if (!els.length) return;
+  const put = y => { y = Math.round(y * 10) / 10; if (y !== ly.y) { ly.y = y; roll.style.transform = `translateY(${-y}px)`; } };
+  if (ly.kind === 'plain') {
+    // no timing to go on: roll through the words over the length of the track
+    const q = Math.max(0, Math.min(1, ((S.duration ? pos / S.duration : 0) - 0.03) / 0.9));
+    put(Math.max(0, roll.offsetHeight - win.clientHeight) * q - win.clientHeight * 0.24 * (1 - q) + win.clientHeight * 0.24 * q);
+    return;
+  }
+  const at = pos + 250 + (Number(cfg.display.lyricsOffsetMs) || 0); // a touch early: eyes read ahead of ears
+  let idx = -1;
+  for (let lo = 0, hi = ly.rows.length - 1; lo <= hi;) { const mid = (lo + hi) >> 1; if (ly.rows[mid].t <= at) { idx = mid; lo = mid + 1; } else hi = mid - 1; }
+  const moved = idx !== ly.idx;
+  if (moved) {
+    ly.idx = idx;
+    for (let i = 0; i < els.length; i++) { els[i].classList.toggle('on', i === idx); els[i].classList.toggle('past', i < idx); }
+  }
+  // keep the line being sung in the middle (re-measured now and then: fonts load late and screens resize)
+  if (moved || now - ly.checked > 1000) {
+    ly.checked = now;
+    const el = els[Math.max(0, idx)];
+    put(el.offsetTop + el.offsetHeight / 2 - win.clientHeight / 2);
+  }
+  const row = ly.rows[idx];
+  if (row && row.gap) {
+    const f = row.end > row.t ? (at - row.t) / (row.end - row.t) : 1;
+    const dots = els[idx].children;
+    for (let i = 0; i < dots.length; i++) dots[i].style.opacity = Math.max(0.18, Math.min(1, f * dots.length - i)).toFixed(2);
+  }
+}
+
 function renderRaw() {
   if (mode !== 'eng') return;
   $('rawdl').innerHTML = Object.entries(S.raw).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
@@ -272,6 +358,7 @@ function frame(now) {
     $('bar').style.transform = `scaleX(${S.duration ? pos / S.duration : 0})`;
     if (S.format.fileMB && S.duration) $('moved').innerHTML = `<b>≈${(S.format.fileMB * pos / S.duration).toFixed(1)} MB</b> of ${S.format.fileMB.toFixed(1)} MB played`;
     else $('moved').textContent = '';
+    lyricsFrame(pos, now);
     const playing = S.state === 'playing' && !reduce;
     drawPulse(playing ? dt : 0);
   }
@@ -323,7 +410,7 @@ function connect() {
   lastMsg = Date.now();
   es = new EventSource(PREVIEW ? '/events?preview=1' : '/events');
   // any event, including the bridge's heartbeat, proves the connection is alive
-  for (const ev of ['config', 'state', 'stats', 'link', 'hb']) es.addEventListener(ev, () => { lastMsg = Date.now(); });
+  for (const ev of ['config', 'state', 'stats', 'lyrics', 'link', 'hb']) es.addEventListener(ev, () => { lastMsg = Date.now(); });
   es.addEventListener('config', e => {
     cfg = JSON.parse(e.data);
     if (PREVIEW) { cfg.display = { ...cfg.display, ...PREVIEW }; store.set = () => {}; }
@@ -350,6 +437,7 @@ function connect() {
     render(); applyMode();
   });
   es.addEventListener('stats', e => renderStats(lastStats = JSON.parse(e.data)));
+  es.addEventListener('lyrics', e => { LY = JSON.parse(e.data); if (S) { renderLyrics(); fitLyrics(); } });
   es.addEventListener('link', e => {
     const l = JSON.parse(e.data);
     $('offline').hidden = l.connected; $('dot').classList.toggle('on', l.connected);

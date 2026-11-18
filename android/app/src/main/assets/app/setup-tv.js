@@ -41,11 +41,31 @@
   sec.innerHTML = '<h2>TV app</h2><p class="hint" id="appInfo">Checking…</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="appInstall" class="primary" hidden>Install update</button><button id="appCheck">Check for updates</button></div><p class="hint" id="appMsg" style="margin:10px 0 0"></p>';
   (box && box.nextElementSibling ? box.parentNode.insertBefore(sec, box.nextElementSibling) : document.querySelector('main').appendChild(sec));
 
+  // an update is waiting: say so at the very top, with the button right there (the TV app section is a long way
+  // down with a remote). On the TV the button takes the focus, so one press of OK starts the install.
+  function banner(u) {
+    let b = $('appBanner');
+    if (!u) { if (b) b.remove(); return; }
+    if (b && b.dataset.v === u.version) return;
+    if (b) b.remove();
+    b = document.createElement('section');
+    b.id = 'appBanner'; b.dataset.v = u.version;
+    b.style.cssText = 'border-color:var(--accent);box-shadow:0 0 18px rgba(200,107,255,.28);display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap';
+    const can = onTv && u.canInstall;
+    b.innerHTML = '<div><h2 style="margin:0 0 4px">Update ready</h2><p class="hint" style="margin:0">T8 HUD <b>' + esc(u.version) + '</b> is out. ' +
+      (can ? 'Press OK to install it. Your settings stay as they are.' : onTv ? 'Download it from ' + esc(u.page) : 'Install it from the setup screen on the TV (press OK on the remote, then Settings).') + '</p></div>' +
+      (can ? '<button class="primary" id="appBannerBtn" style="font-size:17px;padding:14px 22px">Install update</button>' : '');
+    const lead = document.querySelector('main .lead');
+    lead.parentNode.insertBefore(b, lead.nextSibling);
+    if (can) { $('appBannerBtn').onclick = () => { $('appInstall').scrollIntoView({ block: 'center' }); $('appInstall').click(); }; $('appBannerBtn').focus(); }
+  }
+
   async function refresh() {
     try {
       const c = await (await fetch('/api/config', { cache: 'no-store' })).json();
       const a = c.app || {};
       const u = a.update;
+      banner(u);
       $('appInfo').innerHTML = 'T8 HUD for Google TV, version <b>' + esc(a.version || '?') + '</b>. ' + esc(a.updateStatus || '') +
         (u ? '. Release notes: ' + esc(u.page) : '');
       $('appInstall').hidden = !(u && u.canInstall);

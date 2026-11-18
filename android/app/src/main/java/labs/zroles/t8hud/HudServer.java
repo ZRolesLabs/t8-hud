@@ -8,6 +8,8 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,7 +23,9 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -45,6 +49,11 @@ final class HudServer {
     private static final String TAG = "T8HUD";
     static final int FIRST_PORT = 8080;
     private static final Pattern ID_KEY = Pattern.compile("^[\\w-]{1,32}$");
+    // lyrics: the only two requests ever made, one to the T8 and one to LRCLIB (see lib/lyrics.js)
+    private static final Pattern T8_LYRIC = Pattern.compile("^/ZidooMusicControl/v2/getLyric\\?[\\w=&%.+-]{1,200}$");
+    private static final Pattern LRCLIB_PATH = Pattern.compile("^/api/(get|search)\\?[\\w=&%.+~!*'()-]{1,900}$");
+    private static final String LRCLIB = "https://lrclib.net";
+    private static final long WEEK_MS = 7L * 24 * 3600 * 1000;
 
     private final Context ctx;
     final Config config;
@@ -341,7 +350,11 @@ final class HudServer {
             case "/art/preview": asset(out, "samples/demo-cover.jpg", "image/jpeg", "max-age=86400"); return;
             case "/": page(out, "public/index.html", false); return;
             case "/setup": page(out, "public/setup.html", true); return;
-            case "/lib/normalize.js": normalizer(out); return;
+            case "/lib/normalize.js": module(out, "lib/normalize.js", "T8N"); return;
+            case "/lib/lyrics.js": module(out, "lib/lyrics.js", "T8L"); return;
+            case "/t8/lyric": t8Lyric(r, out); return;
+            case "/lyrics/lrclib": lrclib(r, out); return;
+            case "/samples/demo-lyrics.lrc": asset(out, "samples/demo-lyrics.lrc", "text/plain; charset=utf-8", "no-store"); return;
             case "/events": send(out, 404, "text/plain", "The TV app has no event stream; the page polls /t8/state.".getBytes(), null); return;
             default:
         }
@@ -404,18 +417,18 @@ final class HudServer {
         String v = "?b=" + BuildConfig.VERSION_NAME;
         String inject = setup
                 ? "<script src=\"/app/setup-tv.js" + v + "\"></script>\n</body>"
-                : "<script src=\"/lib/normalize.js" + v + "\"></script>\n<script src=\"/app/bridge.js" + v + "\"></script>\n<script src=\"app.js";
+                : "<script src=\"/lib/normalize.js" + v + "\"></script>\n<script src=\"/lib/lyrics.js" + v + "\"></script>\n<script src=\"/app/bridge.js" + v + "\"></script>\n<script src=\"app.js";
         html = setup ? html.replace("</body>", inject) : html.replace("<script src=\"app.js", inject);
         html = html.replaceAll("(href|src)=\"((?:fonts/fonts\\.css|style\\.css|app\\.js))\"", "$1=\"$2" + v + "\"");
         send(out, 200, "text/html; charset=utf-8", html.getBytes(StandardCharsets.UTF_8), "no-store");
     }
 
-    /** lib/normalize.js is a Node module; wrap it so the page can use it as-is. */
-    private void normalizer(OutputStream out) throws IOException {
-        String src = Config.readAsset(ctx, "lib/normalize.js");
+    /** lib/normalize.js and lib/lyrics.js are Node modules; wrap them so the page can use them as-is. */
+    private void module(OutputStream out, String file, String global) throws IOException {
+        String src = Config.readAsset(ctx, file);
         String js = "(function(){var module={exports:{}},exports=module.exports;\n"
                 + "var require=function(n){if(n!=='crypto')throw new Error(n);return{createHash:function(){var d='';return{update:function(s){d+=s;return this},digest:function(){return window.T8HUD_HASH(d)}}}}};\n"
-                + src + "\nwindow.T8N=module.exports;})();\n";
+                + src + "\nwindow." + global + "=module.exports;})();\n";
         send(out, 200, "text/javascript; charset=utf-8", js.getBytes(StandardCharsets.UTF_8), "no-store");
     }
 
@@ -424,6 +437,95 @@ final class HudServer {
         try { b = Config.readAll(ctx.getAssets().open(name)); }
         catch (IOException e) { send(out, 404, "text/plain", "Not found".getBytes(), null); return; }
         send(out, 200, type, b, cache);
+    }
+
+    // ---- lyrics: the page decides what to ask (lib/lyrics.js); the app only fetches, and only these two things ----
+    /** The T8's own lyric for the playing track. Read-only, home network only. */
+    private void t8Lyric(Req r, OutputStream out) throws IOException {
+        String q = r.params.get("q");
+        if (!config.showLyrics() || q == null || !T8_LYRIC.matcher(q).matches() || host.isEmpty()) { send(out, 404, "text/plain", new byte[0], null); return; }
+        try { send(out, 200, "application/octet-stream", t8Get(host, q, 5000), "no-store"); } // the lyric file as the T8 sends it
+        catch (Exception e) { send(out, 404, "text/plain", new byte[0], null); }
+    }
+
+    /**
+     * One LRCLIB lookup, only when the online lookup is switched on in setup and only for the track the
+     * T8 says is playing. Every answer is kept in the app's storage, so a track is asked for once
+     * ("nothing found" is asked again after a week). Answers "null" when there is nothing.
+     */
+    private void lrclib(Req r, OutputStream out) throws IOException {
+        String p = r.params.get("p");
+        byte[] none = "null".getBytes(StandardCharsets.UTF_8);
+        if (!isLan(r.remote) || !config.showLyrics() || !config.lyricsOnline() || p == null || !LRCLIB_PATH.matcher(p).matches() || !playingNow(p)) {
+            send(out, 200, "application/json", none, "no-store"); return;
+        }
+        File dir = new File(ctx.getFilesDir(), "lyrics");
+        File f = new File(dir, sha1(p) + ".json");
+        try {
+            if (f.exists()) {
+                byte[] cached = Config.readAll(new java.io.FileInputStream(f));
+                boolean found = !(cached.length == 4 && new String(cached, StandardCharsets.UTF_8).equals("null"));
+                if (found || System.currentTimeMillis() - f.lastModified() < WEEK_MS) { send(out, 200, "application/json", cached, "no-store"); return; }
+            }
+        } catch (IOException ignored) {}
+        byte[] body;
+        try {
+            HttpURLConnection c = (HttpURLConnection) new URL(LRCLIB + p).openConnection();
+            c.setConnectTimeout(8000); c.setReadTimeout(12000);
+            c.setRequestProperty("Accept", "application/json");
+            c.setRequestProperty("User-Agent", "T8-HUD/" + BuildConfig.VERSION_NAME + " (https://github.com/ZRolesLabs/t8-hud)");
+            try {
+                int code = c.getResponseCode();
+                if (code == 404) body = none;
+                else if (code != 200) throw new IOException("HTTP " + code);
+                else {
+                    body = Config.readAll(c.getInputStream());
+                    if (body.length > 3_000_000) throw new IOException("answer too large");
+                    String t = new String(body, StandardCharsets.UTF_8).trim();
+                    if (t.equals("[]") || t.isEmpty()) body = none;
+                }
+            } finally { c.disconnect(); }
+        } catch (Exception e) {
+            Log.w(TAG, "lyrics: " + e.getMessage());
+            send(out, 200, "application/json", none, "no-store"); return; // not kept: try again next time
+        }
+        try {
+            if (dir.isDirectory() || dir.mkdirs()) {
+                try (FileOutputStream o = new FileOutputStream(f)) { o.write(body); }
+                File[] all = dir.listFiles();
+                if (all != null && all.length > 1500) {
+                    Arrays.sort(all, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+                    for (int i = 0; i < all.length - 1200; i++) all[i].delete();
+                }
+            }
+        } catch (IOException ignored) {}
+        send(out, 200, "application/json", body, "no-store");
+    }
+
+    /** Is this lookup about the track in the T8's latest answer? (so the endpoint cannot be used for anything else) */
+    private boolean playingNow(String lrclibPath) {
+        try {
+            String name = "";
+            for (String kv : lrclibPath.substring(lrclibPath.indexOf('?') + 1).split("&")) {
+                if (kv.startsWith("track_name=")) name = URLDecoder.decode(kv.substring(11), "UTF-8");
+            }
+            name = name.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
+            if (name.isEmpty() || lastRaw == null) return false;
+            JSONObject raw = new JSONObject(lastRaw);
+            JSONObject pm = raw.optJSONObject("playingMusic"), info = raw.optJSONObject("everSoloPlayInfo");
+            JSONObject ain = info == null ? null : info.optJSONObject("everSoloPlayAudioInfo");
+            String[] titles = { pm == null ? "" : pm.optString("title"), pm == null ? "" : pm.optString("name"), ain == null ? "" : ain.optString("songName") };
+            for (String t : titles) if (t.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT).contains(name)) return true;
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    private static String sha1(String s) {
+        try {
+            StringBuilder b = new StringBuilder();
+            for (byte x : MessageDigest.getInstance("SHA-1").digest(s.getBytes(StandardCharsets.UTF_8))) b.append(String.format("%02x", x));
+            return b.toString();
+        } catch (Exception e) { return Integer.toHexString(s.hashCode()); }
     }
 
     // ---- cover art: only what the T8's own answer points at ----

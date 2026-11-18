@@ -49,6 +49,37 @@ body.nocursor, body.nocursor * { cursor: none; }
 .stage[data-font=serif] { --f-title: "Playfair Display", Georgia, serif; --f-info: "Lora", Georgia, serif; --title-w: 700; --title-tt: none; --title-k: .8; }
 .stage[data-font=terminal] { --f-title: var(--f-mono); --f-info: var(--f-mono); --title-w: 600; --title-k: .66; }
 
+/* Lyrics (display.showLyrics, off by default): a three-line window in the track column, between the album and
+   the progress bar, in the same lettering as the artist line. The line being sung is full size and lit in the
+   format colour; the lines around it sit back. Only there when the track has words, so nothing else moves. */
+.stage { --ly-k: 1; }
+.stage[data-tsize=large] { --ly-k: 1.1; }
+.stage[data-tsize=xlarge] { --ly-k: 1.22; }
+.lyrics { display: grid; gap: .7cqw; min-width: 0; animation: ly-in 1s ease both; }
+@keyframes ly-in { from { opacity: 0; } to { opacity: 1; } }
+.ly-k { font: 600 .62cqw/1 var(--f-body); text-transform: uppercase; letter-spacing: .14em; color: var(--fg-3); }
+.ly-k b { font-weight: 600; color: var(--accent); }
+.ly-win { --ly: calc(1.9cqw * var(--ly-k)); position: relative; height: calc(var(--ly) * 4.5); overflow: hidden; border-left: .16cqw solid rgba(var(--accent-rgb), 0.5); padding-left: 1.3cqw;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 24%, #000 76%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 24%, #000 76%, transparent 100%); }
+.ly-roll { position: relative; transition: transform .8s cubic-bezier(.22,.8,.24,1); will-change: transform; }
+.ly-line { font: 600 var(--ly)/1.2 var(--f-info); padding: calc(var(--ly) * .17) 0; color: var(--fg-2); opacity: .55; transform: scale(.7); transform-origin: left center; text-wrap: balance; overflow-wrap: anywhere;
+  transition: transform .8s cubic-bezier(.22,.8,.24,1), opacity .8s, color .8s, text-shadow .8s; }
+.ly-line.past { opacity: .3; }
+.ly-line.on { color: var(--fg); opacity: 1; transform: none; text-shadow: 0 0 1.5cqw rgba(var(--accent-rgb), 0.6); }
+/* a break in the singing: three dots that fill as the next line comes up (real timing, from the lyric file) */
+.ly-line.gap { display: flex; gap: calc(var(--ly) * .32); align-items: center; height: calc(var(--ly) * 1.54); }
+.ly-line.gap i { width: calc(var(--ly) * .36); height: calc(var(--ly) * .36); border-radius: 50%; background: var(--accent); opacity: .18; box-shadow: 0 0 .8cqw rgba(var(--accent-rgb), 0.7); }
+/* words with no timing: smaller, evenly lit, rolling slowly with the track (and labelled "not timed") */
+.ly-win.plain .ly-roll { transition: none; }
+.ly-win.plain .ly-line { font-weight: 500; font-size: calc(var(--ly) * .74); line-height: 1.3; padding: calc(var(--ly) * .1) 0; transform: none; opacity: .9; transition: none; }
+.ly-win.plain .ly-line:empty { height: calc(var(--ly) * .6); }
+.stage.eng .ly-win { --ly: calc(1.5cqw * var(--ly-k)); }
+/* not enough room for three lines (a long title in extra-large lettering): just the line being sung */
+.stage.ly-compact .ly-win { height: calc(var(--ly) * 1.75); -webkit-mask-image: none; mask-image: none; }
+.stage.ly-compact .ly-line:not(.on) { opacity: 0; }
+.stage.ly-compact .ly-win.plain { height: calc(var(--ly) * 2.1); }
+.stage.ly-compact .ly-win.plain .ly-line { opacity: .9; }
+
 .progress { display: grid; grid-template-columns: auto 1fr auto; gap: 1cqw; align-items: center; font: 500 .95cqw/1 var(--f-mono); color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .bar { height: .35cqw; background: rgba(255,255,255,.1); border-radius: 1cqw; position: relative; overflow: hidden; }
 .bar i { position: absolute; inset: 0 auto 0 0; width: 100%; transform-origin: left; transform: scaleX(0); background: var(--accent); box-shadow: 0 0 1cqw var(--accent); border-radius: 1cqw; will-change: transform; }
@@ -126,7 +157,7 @@ body.nocursor, body.nocursor * { cursor: none; }
 .toast { position: absolute; bottom: 2cqw; left: 50%; transform: translateX(-50%); z-index: 7; font: 600 1cqw/1 var(--f-mono); color: var(--fg); background: var(--ink-2); border: 1px solid var(--accent); border-radius: 2cqw; padding: .7cqw 1.4cqw; }
 [hidden] { display: none !important; }
 
-@media (prefers-reduced-motion: reduce) { .art { animation: none; } .night .drift, .hud { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .art, .lyrics { animation: none; } .night .drift, .hud, .ly-roll, .ly-line { transition: none; } }
 
 .chain[hidden], .stats:empty { display: none; }
 

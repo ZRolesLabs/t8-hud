@@ -51,12 +51,12 @@ android {
     sourceSets.main.assets.srcDirs += layout.buildDirectory.dir('hudAssets').get().asFile
 }
 
-// copy the shared HUD page, the payload normaliser and the demo track into the APK
+// copy the shared HUD page, the payload normaliser, the lyrics logic and the demo track into the APK
 def copyHud = tasks.register('copyHudAssets', Sync) {
     into layout.buildDirectory.dir('hudAssets')
     from(new File(repoRoot, 'public')) { into 'public'; exclude 'example-hud.jpg' }
-    from(new File(repoRoot, 'lib/normalize.js')) { into 'lib' }
+    from(new File(repoRoot, 'lib')) { into 'lib'; include 'normalize.js', 'lyrics.js' }
     from(new File(repoRoot, 'config.example.json'))
-    from(new File(repoRoot, 'samples')) { into 'samples'; include 'getState-dsd64-deacon-blues.json', 'demo-cover.jpg' }
+    from(new File(repoRoot, 'samples')) { into 'samples'; include 'getState-dsd64-deacon-blues.json', 'demo-cover.jpg', 'demo-lyrics.lrc' }
 }
 tasks.named('preBuild') { dependsOn copyHud }

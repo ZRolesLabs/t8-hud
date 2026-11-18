@@ -1,12 +1,23 @@
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="600">
 
-## Smoother progress bar
+## Lyrics
 
-The progress bar no longer stutters or jumps back a second at a time. The T8 reports its position a little late and unevenly, and sometimes repeats an old one. The HUD now runs its own steady clock between reports and blends small corrections in gently. It only jumps for a real seek, a new track or a pause.
+<img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/lyrics.png" alt="T8 HUD with lyrics" width="800">
 
-## Optional flask signature
+T8 HUD 3.0 can show the words of the playing track: three lines under the album name, with the line being sung lit in the format colour. Nothing else on the screen moves, and a track without lyrics looks exactly as before.
 
-New on the setup page under **Look**: **Sign it with the ZRolesLabs flask** puts a small flask and "ZRolesLabs" in the bottom-right corner, inside the part of the picture TVs don't crop. It's off by default, so nothing changes unless you switch it on.
+- **Off by default.** Switch it on with **Show lyrics** on the setup page, or with the new **Lyrics** item in the Google TV app's remote menu (press any button on the remote).
+- **From your T8 first.** If the T8 already has a lyric for a track in its library, the HUD reads it from the T8, over the same read-only local API as everything else. Nothing leaves your network.
+- **Online lookup is a separate switch, also off by default.** Tick **Look up missing lyrics on LRCLIB** and tracks the T8 has no words for are looked up at [lrclib.net](https://lrclib.net), a free, open-source lyrics database with no account and no key. A lookup sends the title, artist, album and length, and nothing else. Each track is only asked for once; the answer is kept by the HUD.
+- **Nothing made up.** Timed lyrics are only used when they fit the recording. Otherwise the words are shown as plain text and labelled "not timed". No lyrics found means no lyrics shown.
+- **Timing nudge** on the setup page, if the words land a little early or late on your system.
+
+The lyric lines in the screenshot are sample lines written for the preview.
+
+## Also new
+
+- **Update ready, right at the top.** When a new version is out, the Google TV setup screen now says so at the top with the **Install update** button already selected. Press OK.
+- The ZRolesLabs flask signature (setup page → Look) is still there and still off by default.
 
 **Updating:** the app offers the update by itself (OK → Settings → Install update). New here? The README has the [5 steps, all with the remote](https://github.com/ZRolesLabs/t8-hud#google-tv-app).
 

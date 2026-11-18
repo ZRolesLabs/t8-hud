@@ -9,6 +9,7 @@ const os = require('os');
 const net = require('net');
 const crypto = require('crypto');
 const { normalize } = require('./lib/normalize');
+const lyrics = require('./lib/lyrics');
 const stats = require('./lib/stats');
 
 // ---------- config ----------
@@ -157,6 +158,9 @@ function cleanSettings(b) {
     if ('showEq' in d) out.display.showEq = !!d.showEq;
     if ('showClock' in d) out.display.showClock = !!d.showClock;
     if ('showFlask' in d) out.display.showFlask = !!d.showFlask;
+    if ('showLyrics' in d) out.display.showLyrics = !!d.showLyrics;
+    if ('lyricsOnline' in d) out.display.lyricsOnline = !!d.lyricsOnline;
+    if ('lyricsOffsetMs' in d) out.display.lyricsOffsetMs = Math.max(-5000, Math.min(5000, Math.round(Number(d.lyricsOffsetMs) || 0)));
     if ('customColor' in d && /^#[0-9a-f]{6}$/i.test(d.customColor)) out.display.customColor = d.customColor.toLowerCase();
     if ('nightAfterIdleMinutes' in d) out.display.nightAfterIdleMinutes = Math.max(0, Math.min(600, Math.round(Number(d.nightAfterIdleMinutes) || 0)));
     if (cfg.labs) {
@@ -179,6 +183,7 @@ function applySettings(clean) {
   writeUserConfig(clean);
   cfg = loadConfig();
   if (clean.t8Host && clean.t8Host !== t8Host) { t8Host = clean.t8Host; failures = 0; console.log(`[t8] address changed on the setup page: now polling ${t8Host}`); }
+  forgetLyrics(); // the lyric switches may have changed: look the playing track up again on the next poll
   broadcast('config', publicConfig());
 }
 // the setup page only accepts changes from your own network, sent by the setup page itself
@@ -241,6 +246,7 @@ async function poll() {
     }
     if (!DEMO && cfg.labs) stats.record(current); // a replayed demo is not real listening; stats are a labs extra
     broadcast('state', current);
+    updateLyrics(current, raw);
   } catch (err) {
     if (link.connected || link.error !== String(err.message)) {
       link = { connected: false, error: String(err.message), since: Date.now() };
@@ -252,6 +258,85 @@ async function poll() {
   } finally {
     setTimeout(poll, cfg.pollMs || 1000);
   }
+}
+
+// ---------- lyrics (display.showLyrics, off by default) ----------
+// lib/lyrics.js decides what to ask and what to accept; this part only fetches. The T8 is asked first
+// (your own network). LRCLIB is only asked when display.lyricsOnline is on, once per track: every answer
+// is kept in data/lyrics/, so a track you have played before never goes out again.
+const LYRIC_DIR = path.join(ROOT, 'data', 'lyrics');
+const LYRIC_UA = `T8-HUD/${require('./package.json').version} (https://github.com/ZRolesLabs/t8-hud)`;
+const DAY = 864e5;
+const sampleLyrics = () => { try { return fs.readFileSync(path.join(ROOT, 'samples', 'demo-lyrics.lrc'), 'utf8'); } catch { return ''; } };
+function lyricCacheFile(pathAndQuery) { return path.join(LYRIC_DIR, crypto.createHash('sha1').update(lyricServer() + pathAndQuery).digest('hex') + '.json'); }
+function lyricCachePrune() {
+  try {
+    const files = fs.readdirSync(LYRIC_DIR).map(f => ({ f, m: fs.statSync(path.join(LYRIC_DIR, f)).mtimeMs })).sort((a, b) => a.m - b.m);
+    for (const { f } of files.slice(0, Math.max(0, files.length - 2000))) fs.unlinkSync(path.join(LYRIC_DIR, f));
+  } catch {}
+}
+// LRCLIB is open source and can be self-hosted: "lyricsServer" in config.json points the lookup at your own copy
+function lyricServer() { const u = String(cfg.lyricsServer || ''); return /^https?:\/\/[\w.:-]+$/.test(u) ? u : 'https://' + lyrics.LRCLIB_HOST; }
+function getJson(u, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const req = (u.startsWith('https:') ? require('https') : http).get(u, { headers: { Accept: 'application/json', 'User-Agent': LYRIC_UA } }, res => {
+      const chunks = []; let n = 0;
+      res.on('data', c => { n += c.length; if (n > 3e6) req.destroy(new Error('answer too large')); else chunks.push(c); });
+      res.on('end', () => {
+        if (res.statusCode === 404) return resolve({ status: 404, body: null });
+        if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
+        try { resolve({ status: 200, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) }); } catch { reject(new Error('bad JSON')); }
+      });
+      res.on('error', reject);
+    });
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+  });
+}
+// one LRCLIB request, answered from data/lyrics/ when we have asked before ("nothing found" is asked again after a week)
+async function lrclib(pathAndQuery) {
+  if (!/^\/api\/(get|search)\?/.test(pathAndQuery)) return null;
+  const file = lyricCacheFile(pathAndQuery);
+  try {
+    const c = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (c.found) return c.body;
+    if (Date.now() - c.at < 7 * DAY) return null;
+  } catch {}
+  const r = await getJson(lyricServer() + pathAndQuery);
+  const found = r.status === 200 && !(Array.isArray(r.body) && !r.body.length);
+  try {
+    fs.mkdirSync(LYRIC_DIR, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ at: Date.now(), found, body: found ? r.body : null }));
+    if (Math.random() < 0.02) lyricCachePrune();
+  } catch (e) { console.warn('[lyrics] could not save to data/lyrics:', e.message); }
+  return found ? r.body : null;
+}
+// The T8's own lyric for the playing track (local files it has words for). Read-only, like everything else.
+async function t8Lyric(state, raw) {
+  const q = lyrics.t8LyricRequest(state, raw);
+  if (!q || DEMO) return null;
+  return lyrics.t8LyricText(lyrics.decodeText((await t8Get(q, 5000)).buffer));
+}
+
+let lyricState = null; // what was found for the playing track: { key, track: { title, artist, duration }, kind, source, lines }
+let lyricJob = 0;
+function forgetLyrics() { lyricState = null; lyricJob++; }
+async function updateLyrics(state, raw) {
+  if (cfg.display.showLyrics !== true || !state.track || state.state === 'idle') return;
+  // (the T8 can take a moment to say it has a lyric: when that flag turns up, the track is looked up again)
+  const key = lyrics.trackKey(state.track, state.duration) && lyrics.trackKey(state.track, state.duration) + (raw && raw.hasLyric === true ? '|t8' : '');
+  if (!key || (lyricState && lyricState.key === key)) return;
+  const job = ++lyricJob;
+  const track = { title: state.track.title, artist: state.track.artist, duration: state.duration };
+  lyricState = { key, track, kind: 'pending', source: null, lines: [] };
+  let r;
+  if (DEMO) r = lyrics.fromLrcText(sampleLyrics(), 'sample') || { kind: 'none', source: null, lines: [] };
+  else r = await lyrics.find(state.track, state.duration, { t8: () => t8Lyric(state, raw), lrclib }, { online: cfg.display.lyricsOnline === true })
+    .catch(e => { console.warn('[lyrics]', e.message); return { kind: 'none', source: null, lines: [] }; });
+  if (job !== lyricJob) return; // the track changed while we were asking
+  lyricState = { key, track, ...r };
+  if (r.kind !== 'none') console.log(`[lyrics] ${track.artist} - ${track.title}: ${r.kind}${r.source ? ' · ' + r.source : ''}`);
+  broadcast('lyrics', lyricState);
 }
 
 // ---------- cover art proxy (the T8 sends no CORS headers and no content type) ----------
@@ -330,8 +415,11 @@ const server = http.createServer(async (req, res) => {
       res.write(`retry: 2000\n\n`);
       res.write(`event: config\ndata: ${JSON.stringify(publicConfig())}\n\n`);
       res.write(`event: link\ndata: ${JSON.stringify({ connected: true, error: null, since: Date.now() })}\n\n`);
-      const send = () => { const s = normalize(demoState()); s.art = '/art/preview'; delete s.artRef; res.write(`event: state\ndata: ${JSON.stringify(s)}\n\n`); };
-      send();
+      const send = () => { const s = normalize(demoState()); s.art = '/art/preview'; delete s.artRef; res.write(`event: state\ndata: ${JSON.stringify(s)}\n\n`); return s; };
+      const first = send();
+      // sample lines written for the preview (not the words of the sample track); the page only draws them when lyrics are switched on
+      const sample = lyrics.fromLrcText(sampleLyrics(), 'sample');
+      if (sample) res.write(`event: lyrics\ndata: ${JSON.stringify({ track: { title: first.track.title, artist: first.track.artist, duration: first.duration }, ...sample })}\n\n`);
       const t = setInterval(send, 1000);
       req.on('close', () => clearInterval(t));
       return;
@@ -342,6 +430,7 @@ const server = http.createServer(async (req, res) => {
       res.write(`event: config\ndata: ${JSON.stringify(publicConfig())}\n\n`);
       res.write(`event: link\ndata: ${JSON.stringify(link)}\n\n`);
       if (current) res.write(`event: state\ndata: ${JSON.stringify(current)}\n\n`);
+      if (lyricState && lyricState.kind !== 'pending') res.write(`event: lyrics\ndata: ${JSON.stringify(lyricState)}\n\n`);
       res.write(`event: stats\ndata: ${JSON.stringify(stats.summary())}\n\n`);
       clients.add(res);
       req.on('close', () => clients.delete(res));

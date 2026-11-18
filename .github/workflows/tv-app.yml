@@ -6,7 +6,7 @@ name: TV app
 # https://github.com/<repo>/releases/latest/download/t8-hud.apk always points at the newest one.
 on:
   push:
-    paths: ['android/**', 'public/**', 'lib/normalize.js', 'config.example.json', 'package.json', '.github/workflows/tv-app.yml']
+    paths: ['android/**', 'public/**', 'lib/normalize.js', 'lib/lyrics.js', 'samples/**', 'config.example.json', 'package.json', '.github/workflows/tv-app.yml']
   workflow_dispatch:
     inputs:
       release:

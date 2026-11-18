@@ -61,6 +61,8 @@ final class Config {
     int pollMs() { return Math.max(500, cfg.optInt("pollMs", 1000)); }
     int timeoutMs() { return cfg.optInt("timeoutMs", 6000); }
     boolean autoDiscover() { return cfg.optBoolean("autoDiscover", true); }
+    boolean showLyrics() { JSONObject d = cfg.optJSONObject("display"); return d != null && d.optBoolean("showLyrics", false); }
+    boolean lyricsOnline() { JSONObject d = cfg.optJSONObject("display"); return d != null && d.optBoolean("lyricsOnline", false); }
 
     private JSONObject readUser() {
         try {
@@ -154,6 +156,9 @@ final class Config {
             if (d.has("showEq")) o.put("showEq", d.optBoolean("showEq"));
             if (d.has("showClock")) o.put("showClock", d.optBoolean("showClock"));
             if (d.has("showFlask")) o.put("showFlask", d.optBoolean("showFlask"));
+            if (d.has("showLyrics")) o.put("showLyrics", d.optBoolean("showLyrics"));
+            if (d.has("lyricsOnline")) o.put("lyricsOnline", d.optBoolean("lyricsOnline"));
+            if (d.has("lyricsOffsetMs")) o.put("lyricsOffsetMs", Math.max(-5000, Math.min(5000, (int) Math.round(d.optDouble("lyricsOffsetMs", 0)))));
             if (d.has("customColor") && COLOR.matcher(d.optString("customColor")).matches()) o.put("customColor", d.optString("customColor").toLowerCase());
             if (d.has("nightAfterIdleMinutes")) o.put("nightAfterIdleMinutes", Math.max(0, Math.min(600, (int) Math.round(d.optDouble("nightAfterIdleMinutes", 0)))));
             if (cfg.optBoolean("labs")) {
