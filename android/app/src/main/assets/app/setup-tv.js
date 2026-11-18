@@ -27,7 +27,7 @@
     document.head.appendChild(s);
   }
 
-  // The remote's up and down keys, on the TV only. Left to itself the WebView jumps to whatever looks
+  // The remote's arrow keys, on the TV only. Left to itself the WebView jumps to whatever looks
   // nearest, which skips small things like check boxes, and a number box keeps the keys for itself (they
   // change the number), so the remote gets stuck in it. Here up and down go row by row and never skip one:
   // the next row down (or up), and in that row the control closest to straight below (or above).
@@ -73,14 +73,62 @@
       go(pool[0].el);
       return true;
     }
-    const typing = el => el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|range|color)$/.test(el.type)));
+    // Boxes you type in. Left alone, the TV's on-screen keyboard pops up the moment the remote lands on one,
+    // and then it keeps the arrow keys for itself. So every box sits read-only until OK is pressed on it:
+    // the arrows pass straight through, OK opens the keyboard, and the keyboard's own tick (or OK once the
+    // keyboard is gone, or just moving on) closes the box again.
+    const types = el => !!el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|range|color|file|hidden)$/.test(el.type)));
+    const app = window.T8App;                                                         // the TV app itself, for the keyboard
+    const keyboard = show => { try { if (app && app.keyboard) app.keyboard(show); } catch {} };
+    let editing = null, busy = false;
+    const park = el => { el.readOnly = true; el.enterKeyHint = 'done'; el.classList.remove('tv-edit'); };
+    function edit(el) {
+      busy = true;
+      el.blur();                                                                      // off and on again: the keyboard only opens for a box that takes the focus while it can be typed in
+      el.readOnly = false; el.classList.add('tv-edit'); editing = el;
+      el.focus({ preventScroll: true });
+      busy = false;
+      try { const n = el.value.length; el.setSelectionRange(n, n); } catch {}          // (number boxes have no cursor to place)
+      keyboard(true);
+    }
+    function done(el) {
+      busy = true;
+      el.blur();                                                                      // lets the page hear about the change
+      park(el); editing = null;
+      if (el.isConnected) el.focus({ preventScroll: true });
+      busy = false;
+      keyboard(false);
+    }
+    const css = document.createElement('style');
+    css.textContent = 'input.tv-edit, textarea.tv-edit { outline: 2px solid #fff !important; box-shadow: 0 0 0 5px var(--accent), 0 0 26px var(--accent); caret-color: var(--accent); }';
+    document.head.appendChild(css);
+    const parkAll = root => { if (root.querySelectorAll) root.querySelectorAll('input, textarea').forEach(el => { if (types(el) && el !== editing) park(el); }); };
+    parkAll(document);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType !== 1) return; if (types(n) && n !== editing) park(n); parkAll(n); })))
+      .observe(document.documentElement, { childList: true, subtree: true });           // rows added later
+    document.addEventListener('focusin', e => { if (!busy && types(e.target) && e.target !== editing) park(e.target); }, true);
+    document.addEventListener('focusout', e => { if (!busy && e.target === editing) { park(editing); editing = null; } }, true);
+
+    // OK on a tick box. Some WebViews tick it by themselves and some do not, so look afterwards and only
+    // tick it here when nothing happened.
+    let tick = null;
+    const ticks = el => !!el && el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio');
+    document.addEventListener('keyup', e => {
+      if (e.key !== 'Enter' || !tick) return;
+      const { el, was } = tick; tick = null;
+      if (el === e.target) setTimeout(() => { if (el.checked === was && !el.disabled && el.isConnected) el.click(); }, 60);
+    }, true);
+
     document.addEventListener('keydown', e => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      const k = e.key;
-      if (k === 'ArrowDown' || k === 'ArrowUp') {
-        if (e.target && e.target.tagName === 'TEXTAREA') return;
+      const k = e.key, t = e.target;
+      if (k === 'Enter') {
+        if (types(t)) { e.preventDefault(); if (!e.repeat) (t === editing ? done : edit)(t); }
+        else if (ticks(t) && !e.repeat) tick = { el: t, was: t.checked };
+      } else if (k === 'ArrowDown' || k === 'ArrowUp') {
+        if (t && t.tagName === 'TEXTAREA' && t === editing) return;
         if (step(k === 'ArrowDown')) e.preventDefault();
-      } else if ((k === 'ArrowLeft' || k === 'ArrowRight') && !typing(e.target)) {     // in a text box they move the cursor
+      } else if ((k === 'ArrowLeft' || k === 'ArrowRight') && t !== editing) {         // while typing they move the cursor
         if (side(k === 'ArrowRight')) e.preventDefault();
       }
     }, true);
@@ -90,7 +138,7 @@
   if (box) {
     if (onTv) {
       box.querySelector('h2').textContent = 'Easier: set up from your phone';
-      box.querySelector('.hint').textContent = 'Typing with a TV remote is slow. Point your phone camera at the code and tap the link, or type the address into a browser on your phone or computer (same network). Back on the remote returns to the HUD.';
+      box.querySelector('.hint').textContent = 'Typing with a TV remote is slow. Point your phone camera at the code and tap the link, or type the address into a browser on your phone or computer (same network). To type here anyway, press OK on a box and the keyboard opens. Back on the remote returns to the HUD.';
       showQr(box);
     } else box.hidden = true;
   }

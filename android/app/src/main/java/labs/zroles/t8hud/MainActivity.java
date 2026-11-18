@@ -11,6 +11,8 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -50,6 +52,7 @@ public final class MainActivity extends Activity {
             }
         });
         web.setFocusable(true);
+        web.addJavascriptInterface(new Remote(), "T8App");
         setContentView(web);
         hideSystemUi();
     }
@@ -126,6 +129,22 @@ public final class MainActivity extends Activity {
             return true;
         }
         return super.dispatchKeyEvent(e);
+    }
+
+    /**
+     * What the setup page may ask of the app: open or close the on-screen keyboard. The page keeps its text
+     * boxes read-only until OK is pressed on one, so the keyboard never opens just because the remote passed by.
+     */
+    private final class Remote {
+        @JavascriptInterface public void keyboard(final boolean show) {
+            handler.postDelayed(() -> {
+                if (web == null || isFinishing()) return;
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm == null) return;
+                if (show) imm.showSoftInput(web, 0);
+                else imm.hideSoftInputFromWindow(web.getWindowToken(), 0);
+            }, show ? 150 : 0); // a moment for the WebView to learn that the box can now be typed in
+        }
     }
 
     private void hideSystemUi() {
