@@ -224,7 +224,7 @@ What you see is honest, like the rest of the HUD:
 
 - **Timed lyrics** follow the music line by line. Three dots fill up during a break in the singing, so you can see the next line coming.
 - Timed lyrics are only used when they were made for a recording of the same length (within 3 seconds). If the only lyrics found are for a different cut, or have no timing at all, the words are shown as plain text that rolls slowly with the track, labelled **not timed**.
-- No lyrics found, an instrumental, a radio stream with no artist: no lyrics block. The HUD never invents words or timing.
+- No lyrics found, an instrumental, a radio stream with no artist: no words, just one small line that says why (**Lyrics · none found for this track**, or **none on the T8 · online lookup is off**), so you can tell it from the HUD not working. The HUD never invents words or timing.
 
 Words landing a beat early or late on your system? **Timing nudge** on the setup page shifts them in steps of 50 milliseconds.
 

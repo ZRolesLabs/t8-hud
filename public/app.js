@@ -225,9 +225,9 @@ function renderDac() {
 // ---------- lyrics ----------
 // The bridge (or the TV app) looks the words up and sends them once per track; the page only draws them.
 // Synced lyrics follow the playhead line by line. Lyrics without timing are shown as plain text that rolls
-// with the track and says "not timed". No lyrics for the track: the block is simply not there.
+// with the track and says "not timed". No lyrics for the track: one small line says so (see lyricsNote).
 let LY = null;   // { track: { title, artist, duration }, kind: 'synced' | 'plain' | ..., source, lines: [{ t, text }] }
-const ly = { sig: '', kind: '', rows: [], idx: -2, y: null, checked: 0 };
+const ly = { sig: '', note: '', kind: '', rows: [], idx: -2, y: null, checked: 0 };
 const LY_SOURCE = { t8: 'from the T8', lrclib: 'LRCLIB', sample: 'sample lines' };
 const LY_GAP_MS = 7000; // a pause this long gets the dots; shorter ones just hold the last line
 const sameSec = (a, b) => Math.round((a || 0) / 1000) === Math.round((b || 0) / 1000);
@@ -236,14 +236,27 @@ function lyricsNow() {
   if (LY.kind !== 'synced' && LY.kind !== 'plain') return null;
   return LY.track.title === S.track.title && LY.track.artist === S.track.artist && sameSec(LY.track.duration, S.duration) ? LY : null;
 }
+// Lyrics are switched on and there are no words to show: one quiet line says why, so a track without
+// lyrics doesn't look like the HUD is broken.
+const LY_NOTE = { looking: 'looking for the words…', instrumental: 'instrumental', none: 'none found for this track', offline: 'none on the T8 · online lookup is off' };
+function lyricsNote() {
+  if (cfg.display.showLyrics !== true || !S || !S.track || !S.track.title) return '';
+  const mine = LY && LY.track && LY.track.title === S.track.title && LY.track.artist === S.track.artist && sameSec(LY.track.duration, S.duration);
+  // (a stream's length turns up a few seconds into the track: until then it is still being looked up)
+  if (!mine || (!(S.duration > 0) && (S.position || 0) < 15000)) return 'looking';
+  if (LY.kind === 'instrumental') return 'instrumental';
+  return LY.source === 'sample' || cfg.display.lyricsOnline === true ? 'none' : 'offline';
+}
 function renderLyrics() {
   const L = lyricsNow();
+  const note = L ? '' : lyricsNote();
   const sig = L ? [L.kind, L.source, L.track.title, L.track.artist, Math.round(L.track.duration / 1000), L.lines.length].join('|') : '';
-  if (sig === ly.sig) return;
-  Object.assign(ly, { sig, kind: L ? L.kind : '', rows: [], idx: -2, y: null });
-  $('lyrics').hidden = !L;
+  if (sig === ly.sig && note === ly.note) return;
+  Object.assign(ly, { sig, note, kind: L ? L.kind : '', rows: [], idx: -2, y: null });
+  $('lyrics').hidden = !L && !note;
+  $('lyrics').classList.toggle('ly-note', !L && !!note);
   stage.classList.toggle('has-lyrics', !!L);
-  if (!L) { $('lyroll').innerHTML = ''; return; }
+  if (!L) { $('lyroll').innerHTML = ''; $('lyk').innerHTML = note ? `Lyrics · <b>${esc(LY_NOTE[note])}</b>` : ''; return; }
   const end = S.duration || 0;
   if (L.kind === 'synced') {
     const lines = L.lines;
