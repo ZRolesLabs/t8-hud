@@ -64,7 +64,7 @@ The easiest way. The app runs on the TV itself, finds the T8 by itself and polls
 ### Using it
 
 - **The HUD is clean.** There are no buttons or hints on screen while music plays. Press any button on the remote and a small menu appears in the corner: **Settings · Lyrics · About · Exit**. Move along it with left and right, press **OK** to pick. **Lyrics** switches the lyrics on or off right there, without leaving the HUD. **About** shows the version, where the project lives and how to get in touch. **Back** closes the menu, and Back on the HUD closes the app. The **Menu** button, if your remote has one, goes straight to Settings.
-- **Set it up from your phone.** Typing with a remote is slow, so the setup page shows a QR code. Point your phone camera at it and tap the link, and the same setup page opens on your phone. You can also type the address shown next to it, such as `http://192.168.1.20:8080/setup`, into any browser on the same network. Changes you save on the phone show on the TV straight away.
+- **Set it up from your phone.** Typing with a remote is slow, so the setup page shows a QR code. Point your phone camera at it and tap the link, and the same setup page opens on your phone. You can also type the address shown next to it, such as `http://192.168.1.20:8080/setup`, into any browser on the same network. Changes you save on the phone show on the TV straight away. The remote works on that page too: the arrows go row by row, and the on-screen keyboard only opens when you press OK on a box.
 
 <p>
 <img src="docs/tv/tv-setup.png" alt="The setup page on the TV, with the QR code" width="560">

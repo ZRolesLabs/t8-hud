@@ -17,6 +17,7 @@ The lyric lines in the screenshot are sample lines written for the preview.
 ## Also new
 
 - **Update ready, right at the top.** When a new version is out, the Google TV setup screen now says so at the top with the **Install update** button already selected. Press OK.
+- **The setup screen behaves with a remote.** On the TV, up and down now go row by row and never skip a tick box, and the on-screen keyboard only opens when you press OK on a box, so you can arrow straight past the ones you do not want to change.
 - The ZRolesLabs flask signature (setup page → Look) is still there and still off by default.
 
 **Updating:** the app offers the update by itself (OK → Settings → Install update). New here? The README has the [5 steps, all with the remote](https://github.com/ZRolesLabs/t8-hud#google-tv-app).

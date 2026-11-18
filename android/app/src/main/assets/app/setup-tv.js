@@ -100,7 +100,7 @@
       keyboard(false);
     }
     const css = document.createElement('style');
-    css.textContent = 'input.tv-edit, textarea.tv-edit { outline: 2px solid #fff !important; box-shadow: 0 0 0 5px var(--accent), 0 0 26px var(--accent); caret-color: var(--accent); }';
+    css.textContent = 'input[readonly], textarea[readonly] { caret-color: transparent; } input.tv-edit, textarea.tv-edit { outline: 2px solid #fff !important; box-shadow: 0 0 0 5px var(--accent), 0 0 26px var(--accent); caret-color: var(--accent); }';
     document.head.appendChild(css);
     const parkAll = root => { if (root.querySelectorAll) root.querySelectorAll('input, textarea').forEach(el => { if (types(el) && el !== editing) park(el); }); };
     parkAll(document);
