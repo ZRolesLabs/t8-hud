@@ -27,6 +27,65 @@
     document.head.appendChild(s);
   }
 
+  // The remote's up and down keys, on the TV only. Left to itself the WebView jumps to whatever looks
+  // nearest, which skips small things like check boxes, and a number box keeps the keys for itself (they
+  // change the number), so the remote gets stuck in it. Here up and down go row by row and never skip one:
+  // the next row down (or up), and in that row the control closest to straight below (or above).
+  if (onTv) {
+    const SEL = 'a[href], button, input:not([type=hidden]), select, textarea, summary, [tabindex]';
+    const bar = document.querySelector('.bar');
+    const seen = el => { if (el.disabled || el.tabIndex < 0 || !el.getClientRects().length) return false; const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none'; };
+    const box = el => { const r = el.getBoundingClientRect(); return { el, l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; };
+    const sideways = (a, c) => (c.l > a.r ? c.l - a.r : a.l > c.r ? a.l - c.r : 0) * 4 + Math.abs(c.cx - a.cx) / 100; // overlap first, then centres
+    function step(down) {
+      const cur = document.activeElement;
+      const all = [...document.querySelectorAll(SEL)].filter(seen);
+      if (!all.length) return false;
+      const inBar = el => !!(bar && bar.contains(el));
+      const flow = all.filter(el => !inBar(el)).map(box), fixed = all.filter(inBar).map(box);
+      if (!cur || cur === document.body || !all.includes(cur)) { const f = flow[0] || fixed[0]; go(f.el); return true; }
+      const a = box(cur);
+      let pool;
+      if (inBar(cur)) pool = down ? [] : flow.filter(c => c.b <= a.t + 2);          // up from the buttons at the bottom: the last thing in view above them
+      else {
+        pool = flow.filter(c => c.el !== cur && (down ? c.cy > a.cy && c.t >= a.b - Math.min(a.h, c.h) / 2 : c.cy < a.cy && c.b <= a.t + Math.min(a.h, c.h) / 2));
+        if (!pool.length && down) pool = fixed;                                      // past the last row: the buttons at the bottom
+      }
+      if (!pool.length) return false;
+      const edge = down ? Math.min(...pool.map(c => c.t)) : Math.max(...pool.map(c => c.b));
+      const first = pool.find(c => (down ? c.t : c.b) === edge);
+      const tol = Math.max(10, first.h * 0.6);
+      const row = pool.filter(c => down ? c.t <= edge + tol : c.b >= edge - tol);
+      row.sort((x, y) => sideways(a, x) - sideways(a, y));
+      go(row[0].el);
+      return true;
+    }
+    function go(el) { el.focus({ preventScroll: true }); if (!(bar && bar.contains(el))) el.scrollIntoView({ block: 'center' }); }
+    // left and right stay inside the row: the nearest control beside this one, or nowhere
+    function side(right) {
+      const cur = document.activeElement;
+      if (!cur || cur === document.body) return false;
+      const a = box(cur), home = bar && bar.contains(cur);
+      const pool = [...document.querySelectorAll(SEL)].filter(seen).filter(el => el !== cur && !!(bar && bar.contains(el)) === !!home).map(box)
+        .filter(c => Math.min(a.b, c.b) - Math.max(a.t, c.t) > Math.min(a.h, c.h) / 2 && (right ? c.cx > a.cx : c.cx < a.cx));
+      if (!pool.length) return true;                                                 // end of the row: stay put
+      pool.sort((x, y) => Math.abs(x.cx - a.cx) - Math.abs(y.cx - a.cx));
+      go(pool[0].el);
+      return true;
+    }
+    const typing = el => el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|range|color)$/.test(el.type)));
+    document.addEventListener('keydown', e => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const k = e.key;
+      if (k === 'ArrowDown' || k === 'ArrowUp') {
+        if (e.target && e.target.tagName === 'TEXTAREA') return;
+        if (step(k === 'ArrowDown')) e.preventDefault();
+      } else if ((k === 'ArrowLeft' || k === 'ArrowRight') && !typing(e.target)) {     // in a text box they move the cursor
+        if (side(k === 'ArrowRight')) e.preventDefault();
+      }
+    }, true);
+  }
+
   const box = $('tvbox');
   if (box) {
     if (onTv) {

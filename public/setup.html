@@ -46,6 +46,12 @@ button.icon { padding: 8px 10px; min-width: 38px; }
 .pal button[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .fontpick .aa { font-size: 19px; margin-right: 8px; line-height: 1; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.check:focus-within { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 6px; }
+.check input:focus { outline: none; }
+.nudge { display: grid; gap: 4px; }
+.nudge .lbl { font: 500 12px/1 var(--f-mono); color: var(--fg-2); letter-spacing: .04em; text-transform: uppercase; }
+.nudge .ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nudge output { min-width: 92px; text-align: center; font: 500 16px/1 var(--f-mono); color: var(--fg); }
 .check { display: flex; gap: 8px; align-items: center; text-transform: none; font: 400 15px/1.2 var(--f-body); color: var(--fg); letter-spacing: 0; }
 .preview { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center; padding: 14px; background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; margin-top: 6px; }
 .pn { display: grid; justify-items: center; gap: 4px; text-align: center; }
@@ -143,8 +149,11 @@ details.extras[open] > summary { margin-bottom: 14px; }
       <label class="check"><input type="checkbox" id="lyOnline"> Look up missing lyrics on LRCLIB</label>
       <p class="hint" style="margin:8px 0 14px">Unticked, the HUD only shows lyrics the T8 already has for a track, and nothing leaves your home network. Ticked, a track the T8 has no words for is looked up at <b>lrclib.net</b>, a free, open-source lyrics database that needs no account and no key. A lookup sends the track’s title, artist, album and length, and nothing else: no ID, no cookies. As with any website, their server sees your internet address. Every answer is kept by the HUD, so each track is only asked for once.</p>
       <div class="two">
-        <label>Timing nudge (milliseconds)<input type="number" id="lyOffset" min="-5000" max="5000" step="50"></label>
-        <p class="hint" style="align-self:end;margin:0">Words a beat late on your system? Try 300. Too early? Try -300. Leave it at 0 if they land right.</p>
+        <div class="nudge"><span class="lbl">Timing nudge</span>
+          <div class="ctl"><button type="button" id="lyMinus" aria-label="50 milliseconds less">− 50</button><output id="lyOffsetOut" for="lyMinus lyPlus">0 ms</output><button type="button" id="lyPlus" aria-label="50 milliseconds more">+ 50</button><button type="button" id="lyZero">Reset</button></div>
+          <input type="hidden" id="lyOffset" value="0">
+        </div>
+        <p class="hint" style="align-self:end;margin:0">Words a beat late on your system? Press + 50 a few times. Too early? Press − 50. Leave it at 0 if they land right.</p>
       </div>
     </div>
   </section>
@@ -217,8 +226,14 @@ async function load() {
   $('flaskOn').checked = st.display.showFlask === true;
   $('lyOn').checked = st.display.showLyrics === true;
   $('lyOnline').checked = st.display.lyricsOnline === true;
-  $('lyOffset').value = st.display.lyricsOffsetMs || 0;
-  const lyUi = () => { for (const el of $('lyFields').querySelectorAll('input')) el.disabled = !$('lyOn').checked; $('lyFields').style.opacity = $('lyOn').checked ? 1 : .45; };
+  // the timing nudge is three buttons, not a number box: a number box swallows the up and down keys of a
+  // TV remote (they change the number), so the remote could never leave it
+  const lyNudge = v => { v = Math.max(-5000, Math.min(5000, Math.round((Number(v) || 0) / 50) * 50)); $('lyOffset').value = v; $('lyOffsetOut').textContent = (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' ms'; };
+  lyNudge(st.display.lyricsOffsetMs);
+  $('lyMinus').onclick = () => lyNudge(Number($('lyOffset').value) - 50);
+  $('lyPlus').onclick = () => lyNudge(Number($('lyOffset').value) + 50);
+  $('lyZero').onclick = () => lyNudge(0);
+  const lyUi = () => { for (const el of $('lyFields').querySelectorAll('input, button')) el.disabled = !$('lyOn').checked; $('lyFields').style.opacity = $('lyOn').checked ? 1 : .45; };
   $('lyOn').onchange = lyUi; lyUi();
   $('custom').value = st.display.customColor || '#ff2bd6';
   $('custom').oninput = renderPal;

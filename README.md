@@ -226,7 +226,7 @@ What you see is honest, like the rest of the HUD:
 - Timed lyrics are only used when they were made for a recording of the same length (within 3 seconds). If the only lyrics found are for a different cut, or have no timing at all, the words are shown as plain text that rolls slowly with the track, labelled **not timed**.
 - No lyrics found, an instrumental, a radio stream with no artist: no lyrics block. The HUD never invents words or timing.
 
-Words landing a beat early or late on your system? **Timing nudge** on the setup page shifts them (try 300 or -300 milliseconds).
+Words landing a beat early or late on your system? **Timing nudge** on the setup page shifts them in steps of 50 milliseconds.
 
 The lyric lines in the screenshots here are sample lines written for the preview, not the words of the song on screen. The **Preview HUD** button uses the same sample lines.
 
