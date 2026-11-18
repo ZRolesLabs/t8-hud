@@ -11,13 +11,15 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 /**
- * Full-screen HUD. Any remote key on the HUD opens a small menu (Settings · About · Exit); Menu goes
+ * Full-screen HUD. Any remote key on the HUD opens a small menu (Settings · Lyrics · About · Exit); Menu goes
  * straight to setup. On setup, Back returns to the HUD; Back on the HUD (menu closed) closes the app. The screen stays on while the app is open.
  */
 public final class MainActivity extends Activity {
@@ -50,6 +52,7 @@ public final class MainActivity extends Activity {
             }
         });
         web.setFocusable(true);
+        web.addJavascriptInterface(new Remote(), "T8App");
         setContentView(web);
         hideSystemUi();
     }
@@ -103,7 +106,7 @@ public final class MainActivity extends Activity {
             if (e.getAction() == KeyEvent.ACTION_UP) web.loadUrl(base() + "/setup");
             return true;
         }
-        // On the HUD the page owns the remote: a first press opens the small menu (Settings · About · Exit),
+        // On the HUD the page owns the remote: a first press opens the small menu (Settings · Lyrics · About · Exit),
         // the D-pad moves along it, OK picks, Back closes it. The page answers what the app has to do.
         String key = k == KeyEvent.KEYCODE_DPAD_LEFT ? "left" : k == KeyEvent.KEYCODE_DPAD_RIGHT ? "right"
                 : k == KeyEvent.KEYCODE_DPAD_UP ? "up" : k == KeyEvent.KEYCODE_DPAD_DOWN ? "down"
@@ -126,6 +129,22 @@ public final class MainActivity extends Activity {
             return true;
         }
         return super.dispatchKeyEvent(e);
+    }
+
+    /**
+     * What the setup page may ask of the app: open or close the on-screen keyboard. The page keeps its text
+     * boxes read-only until OK is pressed on one, so the keyboard never opens just because the remote passed by.
+     */
+    private final class Remote {
+        @JavascriptInterface public void keyboard(final boolean show) {
+            handler.postDelayed(() -> {
+                if (web == null || isFinishing()) return;
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm == null) return;
+                if (show) imm.showSoftInput(web, 0);
+                else imm.hideSoftInputFromWindow(web.getWindowToken(), 0);
+            }, show ? 150 : 0); // a moment for the WebView to learn that the box can now be typed in
+        }
     }
 
     private void hideSystemUi() {

@@ -46,6 +46,12 @@ button.icon { padding: 8px 10px; min-width: 38px; }
 .pal button[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .fontpick .aa { font-size: 19px; margin-right: 8px; line-height: 1; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.check:focus-within { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 6px; }
+.check input:focus { outline: none; }
+.nudge { display: grid; gap: 4px; }
+.nudge .lbl { font: 500 12px/1 var(--f-mono); color: var(--fg-2); letter-spacing: .04em; text-transform: uppercase; }
+.nudge .ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nudge output { min-width: 92px; text-align: center; font: 500 16px/1 var(--f-mono); color: var(--fg); }
 .check { display: flex; gap: 8px; align-items: center; text-transform: none; font: 400 15px/1.2 var(--f-body); color: var(--fg); letter-spacing: 0; }
 .preview { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: center; padding: 14px; background: var(--ink); border: 1px solid var(--rule); border-radius: 8px; margin-top: 6px; }
 .pn { display: grid; justify-items: center; gap: 4px; text-align: center; }
@@ -135,6 +141,22 @@ details.extras[open] > summary { margin-bottom: 14px; }
       <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label><label class="check"><input type="checkbox" id="flaskOn"> Sign it with the ZRolesLabs flask</label></div>
     </div>
   </section>
+  <section>
+    <h2>Lyrics</h2>
+    <p class="hint">The words of the playing track, under the album name, lit line by line in time with the music. Off by default. A track without lyrics gets one small line that says so.</p>
+    <label class="check" style="margin-bottom:12px"><input type="checkbox" id="lyOn"> Show lyrics</label>
+    <div id="lyFields">
+      <label class="check"><input type="checkbox" id="lyOnline"> Look up missing lyrics on LRCLIB</label>
+      <p class="hint" style="margin:8px 0 14px">Unticked, the HUD only shows lyrics the T8 already has for a track, and nothing leaves your home network. Ticked, a track the T8 has no words for is looked up at <b>lrclib.net</b>, a free, open-source lyrics database that needs no account and no key. A lookup sends the track’s title, artist, album and length, and nothing else: no ID, no cookies. As with any website, their server sees your internet address. Every answer is kept by the HUD, so each track is only asked for once.</p>
+      <div class="two">
+        <div class="nudge"><span class="lbl">Timing nudge</span>
+          <div class="ctl"><button type="button" id="lyMinus" aria-label="50 milliseconds less">− 50</button><output id="lyOffsetOut" for="lyMinus lyPlus">0 ms</output><button type="button" id="lyPlus" aria-label="50 milliseconds more">+ 50</button><button type="button" id="lyZero">Reset</button></div>
+          <input type="hidden" id="lyOffset" value="0">
+        </div>
+        <p class="hint" style="align-self:end;margin:0">Words a beat late on your system? Press + 50 a few times. Too early? Press − 50. Leave it at 0 if they land right.</p>
+      </div>
+    </div>
+  </section>
   <details class="extras" id="extras" hidden>
     <summary>Extras (preview): signal chain, DAC window, listening stats</summary>
     <p class="hint">These are early previews and are off by default. The standard screen is cover art plus live telemetry from the T8. Switch any of these on if you want them.</p>
@@ -174,7 +196,7 @@ details.extras[open] > summary { margin-bottom: 14px; }
   </details>
 </main>
 
-<div class="bar"><div class="in"><span class="msg" id="msg"></span><span style="display:flex;gap:8px;flex-wrap:wrap"><button id="previewBtn" title="A sample track, drawn with the settings on this page (saved or not)">Preview HUD</button><button id="liveBtn" disabled>Open live HUD</button><button class="primary" id="save">Save</button></span></div></div>
+<div class="bar"><div class="in"><span class="msg" id="msg"></span><span style="display:flex;gap:8px;flex-wrap:wrap"><button id="previewBtn" title="A sample track, drawn with the settings on this page (saved or not). Lyrics in the preview are sample lines.">Preview HUD</button><button id="liveBtn" disabled>Open live HUD</button><button class="primary" id="save">Save</button></span></div></div>
 
 <script>
 'use strict';
@@ -202,6 +224,17 @@ async function load() {
   $('night').value = st.display.nightAfterIdleMinutes ?? 10;
   $('clockOn').checked = st.display.showClock !== false;
   $('flaskOn').checked = st.display.showFlask === true;
+  $('lyOn').checked = st.display.showLyrics === true;
+  $('lyOnline').checked = st.display.lyricsOnline === true;
+  // the timing nudge is three buttons, not a number box: a number box swallows the up and down keys of a
+  // TV remote (they change the number), so the remote could never leave it
+  const lyNudge = v => { v = Math.max(-5000, Math.min(5000, Math.round((Number(v) || 0) / 50) * 50)); $('lyOffset').value = v; $('lyOffsetOut').textContent = (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' ms'; };
+  lyNudge(st.display.lyricsOffsetMs);
+  $('lyMinus').onclick = () => lyNudge(Number($('lyOffset').value) - 50);
+  $('lyPlus').onclick = () => lyNudge(Number($('lyOffset').value) + 50);
+  $('lyZero').onclick = () => lyNudge(0);
+  const lyUi = () => { for (const el of $('lyFields').querySelectorAll('input, button')) el.disabled = !$('lyOn').checked; $('lyFields').style.opacity = $('lyOn').checked ? 1 : .45; };
+  $('lyOn').onchange = lyUi; lyUi();
   $('custom').value = st.display.customColor || '#ff2bd6';
   $('custom').oninput = renderPal;
   $('extras').hidden = !st.labs; // release 1: chain, DAC window and stats are a hand-enabled labs extra
@@ -394,12 +427,12 @@ $('find').onclick = async () => {
 };
 
 function formDisplay() {
-  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, showFlask: $('flaskOn').checked, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
+  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, showFlask: $('flaskOn').checked, showLyrics: $('lyOn').checked, lyricsOnline: $('lyOnline').checked, lyricsOffsetMs: Number($('lyOffset').value) || 0, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
 }
 // Preview: the HUD with a sample track, drawn with what's on this page right now (saved or not)
 $('previewBtn').onclick = () => {
   const d = formDisplay();
-  const pick = { palette: d.palette, font: d.font, textSize: d.textSize, customColor: d.customColor, showClock: d.showClock, showFlask: d.showFlask, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
+  const pick = { palette: d.palette, font: d.font, textSize: d.textSize, customColor: d.customColor, showClock: d.showClock, showFlask: d.showFlask, showLyrics: d.showLyrics, lyricsOffsetMs: d.lyricsOffsetMs, showEq: d.showEq, eqLabel: d.eqLabel, eqNote: d.eqNote };
   window.open('/?preview=' + encodeURIComponent(JSON.stringify(pick)), 't8hud-preview');
 };
 $('liveBtn').onclick = () => { if (!$('liveBtn').disabled) window.open('/', 't8hud-live'); };

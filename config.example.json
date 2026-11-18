@@ -47,6 +47,9 @@
     "showDac": false,
     "showClock": true,
     "showFlask": false,
+    "showLyrics": false,
+    "lyricsOnline": false,
+    "lyricsOffsetMs": 0,
     "customColor": "#ff2bd6"
   }
 }
