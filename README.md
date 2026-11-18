@@ -214,7 +214,7 @@ Switch on **Show lyrics** on the setup page (or **Lyrics** in the Google TV app'
 
 Where the words come from, in this order:
 
-1. **The T8 itself.** For tracks in its own library, the T8 can already have a lyric (it says so in its status, and the Eversolo app shows the same one). The HUD asks the T8 for it over the same read-only local API as everything else. Nothing leaves your home network. The label says **Lyrics · from the T8**.
+1. **The T8 itself.** For tracks in its own library, the T8 can hold a lyric (the same one the Eversolo app shows). The HUD asks the T8 for it, once per track, over the same read-only local API as everything else. Nothing leaves your home network. The label says **Lyrics · from the T8**.
 2. **LRCLIB, only if you tick “Look up missing lyrics on LRCLIB”.** [LRCLIB](https://lrclib.net) is a free, open-source lyrics database that needs no account and no key. This is **off by default**, and it's the only way lyrics ever touch the internet. When it's on:
    - A lookup sends the track's **title, artist, album and length**, and nothing else: no ID, no cookies, no account. As with any website, their server sees your internet address.
    - It's only asked about tracks the T8 has no lyric for, and each answer is kept by the HUD (in `data/lyrics/` for the browser version, in the app's own storage on a TV), so **a track is only ever asked for once**. “Nothing found” is asked again after a week.
@@ -363,7 +363,7 @@ From `getState` (firmware v1.6.15): track, artist, album, container, codec, samp
 
 - **The T8's own player** (`playType` 5: local files and in-app TIDAL/Qobuz): the track is in `playingMusic`. Local covers come from `getImage?id=<id>&musicType=0&type=0&target=16` as a 1500 × 1500 JPEG; streamed tracks carry their own `albumArt` link. The T8 labels in-app streaming as `LOCAL`, so the HUD reads the service from the stream's own fields (`streamId`, `streamUrl`).
 - **Connect sources** (`playType` 6, e.g. "Tidal connect", "Spotify connect"; AirPlay, Bluetooth): the live track is in `everSoloPlayInfo.everSoloPlayAudioInfo`, with the cover in `everSoloPlayInfo.icon`. `playingMusic` still holds the last in-app track, so the HUD ignores it.
-- **Lyrics:** `getState` carries `hasLyric`. When it's true, `getLyric?id=<id>&type=<type>&duration=<duration>&number=<track number>` (the values straight from `getState`, as the Eversolo app sends them) returns the lyric file itself as LRC text. Connect sources have no library id, so the T8 has no lyric for them.
+- **Lyrics:** `getState` carries `hasLyric`, which means lyrics are supported for the current source, not that this track has one. `getLyric?id=<id>&type=<type>&duration=<duration>&number=<track number>` (the values straight from `getState`, as the Eversolo app sends them) returns the lyric file itself as LRC text when the T8 holds one, and the T8's catch-all error (`{"status":805,…}`) when it doesn't. Connect sources have no library id, so the T8 has no lyric for them.
 - `/api/raw` on the HUD shows the T8's last answer exactly as sent.
 
 It does **not** expose audio levels or which drive a file is on, so the HUD doesn't pretend to show them.
