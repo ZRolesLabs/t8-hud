@@ -6,7 +6,7 @@ An un-enshittified, read-only, account-free “now playing” telemetry display 
 
 ![T8 HUD on a TV](docs/screenshot.png)
 
-Big cover art and deep, live telemetry: the real stream format (DSD64 · 2.8224 MHz · 1-bit · 5.645 Mbps), container, bit depth, channels, bitrate, what the T8 is outputting and on which interface, whether the output rate matches the source, volume lock, and EQ / DSP / MQA state. New in version 3: **lyrics**, lit line by line in time with the music, if you want them. It works with local files and with streaming: TIDAL in the T8's own app, TIDAL Connect, and other connect and network sources the T8 reports.
+Big cover art and deep, live telemetry: the real stream format (DSD64 · 2.8224 MHz · 1-bit · 5.645 Mbps), container, bit depth, channels, bitrate, what the T8 is outputting and on which interface, whether the output rate matches the source, volume lock, and EQ / DSP / MQA state. New in version 3: **lyrics**, lit line by line in time with the music, if you want them (with a big thank you to the open lyrics folks at [LRCLIB](https://lrclib.net)). It works with local files and with streaming: TIDAL in the T8's own app, TIDAL Connect, and other connect and network sources the T8 reports.
 
 It comes two ways:
 
@@ -210,11 +210,11 @@ section first, then ask me to paste the exact output before guessing.
 
 <img src="docs/lyrics.png" alt="The HUD with lyrics: three lines under the album name, the line being sung lit up" width="800">
 
-Switch on **Show lyrics** on the setup page (or **Lyrics** in the Google TV app's remote menu) and the words appear under the album name: three lines, with the line being sung full size and lit in the format colour. Everything else stays where it was. A track with no lyrics looks exactly as it always has. Lyrics are **off by default**.
+Version 3 teaches the HUD to sing along. Switch on **Show lyrics** on the setup page (or **Lyrics** in the Google TV app's remote menu) and the words appear under the album name: three lines, with the line being sung full size and lit in the format colour. Everything else stays exactly where it was, because a lyrics feature that bulldozes the layout isn't a feature. Lyrics are **off by default**, like everything else here that you didn't ask for.
 
 Where the words come from, in this order:
 
-1. **The T8 itself.** For tracks in its own library, the T8 can hold a lyric (the same one the Eversolo app shows). The HUD asks the T8 for it, once per track, over the same read-only local API as everything else. Nothing leaves your home network. The label says **Lyrics · from the T8**.
+1. **The T8 itself.** For tracks in its own library, the T8 can hold a lyric (the same one the Eversolo app shows). The HUD asks the T8 for it, once per track, over the same read-only local API as everything else. Nothing leaves your home network. The label says **Lyrics · from the T8**. Fair warning: our own T8 had no lyric stored for anything we played while testing, so for most music the words will come from the second switch.
 2. **LRCLIB, only if you tick “Look up missing lyrics on LRCLIB”.** [LRCLIB](https://lrclib.net) is a free, open-source lyrics database that needs no account and no key. This is **off by default**, and it's the only way lyrics ever touch the internet. When it's on:
    - A lookup sends the track's **title, artist, album and length**, and nothing else: no ID, no cookies, no account. As with any website, their server sees your internet address.
    - It's only asked about tracks the T8 has no lyric for, and each answer is kept by the HUD (in `data/lyrics/` for the browser version, in the app's own storage on a TV), so **a track is only ever asked for once**. “Nothing found” is asked again after a week.
@@ -229,6 +229,16 @@ What you see is honest, like the rest of the HUD:
 Words landing a beat early or late on your system? **Timing nudge** on the setup page shifts them in steps of 50 milliseconds.
 
 The lyric lines in the screenshots here are sample lines written for the preview, not the words of the song on screen. The **Preview HUD** button uses the same sample lines.
+
+### Thank you, LRCLIB
+
+The online half of this only exists because of [LRCLIB](https://lrclib.net): a free lyrics database, built in the open ([the source is on GitHub](https://github.com/tranxuanthang/lrclib)) and filled in by volunteers who sit down and time songs line by line so the rest of us can read along. No account. No API key. No “sign in to continue”. That is exactly the kind of internet we want more of, and exactly what we mean by UN-enshittified.
+
+So, a big thank you from ZRolesLabs to the people who run LRCLIB and to everyone who has ever added a lyric to it. If the HUD shows you words tonight, somebody out there took the time to line them up.
+
+If a song you love is missing, or the timing is off, you can fix it for everybody: LRCLIB takes contributions, and their free app [LRCGET](https://github.com/tranxuanthang/lrcget) is one way to send them in.
+
+T8 HUD is not affiliated with LRCLIB. We try to be a polite guest: one lookup per track, answers kept on your side so we never ask twice, and a User-Agent that says who we are.
 
 Running your own copy of LRCLIB? In the browser version, add `"lyricsServer": "http://your-server:port"` to `config.json` and lookups go there instead.
 
