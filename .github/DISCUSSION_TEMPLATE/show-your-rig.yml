@@ -1,0 +1,23 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🖥️ Show us your rig
+        Drop a photo of the HUD in the wild. Please check the photo for anything private first (house numbers, faces, IP addresses on screen).
+  - type: textarea
+    id: photo
+    attributes:
+      label: Photos
+      description: Drag images in here.
+    validations:
+      required: true
+  - type: textarea
+    id: chain
+    attributes:
+      label: The chain
+      placeholder: "T8 → DAC → amp → speakers, shown on a 65\" OLED via the Google TV app"
+  - type: input
+    id: look
+    attributes:
+      label: Palette and font
+      placeholder: "Cyberpunk · Terminal · Extra large"

@@ -1,1 +1,14 @@
 blank_issues_enabled: true
+contact_links:
+  - name: 🆘 Ask for help in Discussions
+    url: https://github.com/ZRolesLabs/t8-hud/discussions/categories/help
+    about: Stuck installing or setting up? Ask the community. Fixes get found faster there.
+  - name: 📡 Report another player or source
+    url: https://github.com/ZRolesLabs/t8-hud/discussions/categories/streamer-reports
+    about: T10, DMP-A6/A8/A10, or an untested source? Tell us how the HUD did.
+  - name: 📖 Read the wiki
+    url: https://github.com/ZRolesLabs/t8-hud/wiki
+    about: Install guides, the setup page, lyrics and troubleshooting.
+  - name: 🛡️ Report a security problem privately
+    url: https://github.com/ZRolesLabs/t8-hud/security/advisories/new
+    about: Please don't open a public issue for security problems.

@@ -1,0 +1,44 @@
+title: "[Help] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🆘 Ask the lab
+        Plenty of fixes are already in the **[Troubleshooting](https://github.com/ZRolesLabs/t8-hud/wiki/Troubleshooting)** page of the wiki. Still stuck? Tell us below.
+        Found a **security** problem? Please don't post it here: use the **[private report form](https://github.com/ZRolesLabs/t8-hud/security/advisories/new)**.
+  - type: dropdown
+    id: version-type
+    attributes:
+      label: Which version?
+      options:
+        - Google TV app
+        - Browser version (Windows)
+        - Browser version (Raspberry Pi / Linux)
+        - Browser version (Mac)
+    validations:
+      required: true
+  - type: input
+    id: hud-version
+    attributes:
+      label: T8 HUD version
+      description: Google TV app → OK on the remote → About. Browser version → the release you unzipped.
+      placeholder: "3.0.0"
+  - type: input
+    id: player
+    attributes:
+      label: Player and firmware
+      placeholder: "Eversolo DMP-T8, firmware 1.6.15"
+  - type: textarea
+    id: what
+    attributes:
+      label: What's happening?
+      description: What you expected, what you see instead, and what you've tried. Screenshots welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: raw
+    attributes:
+      label: Raw data (optional, very useful)
+      description: Open `http://<HUD-address>:8080/api/raw` while the track plays and paste the text. It contains track and player info, nothing private, but have a look before posting.
+      render: json

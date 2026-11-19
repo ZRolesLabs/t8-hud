@@ -1,0 +1,24 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Pitch it
+        Search first: if someone already had your idea, give it a 👍 and add your angle in a comment.
+        House rules for new features: **everything on screen is real** (no fake meters or guessed specs), **off by default** if it touches the internet, and **no accounts, ever**.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you like the HUD to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters to you
+      description: The listening moment where you'd want it.
+  - type: textarea
+    id: data
+    attributes:
+      label: Where would the data come from? (optional)
+      description: Does your player report it? Paste `/api/raw` if you think the value is already in there.
