@@ -1,0 +1,67 @@
+title: "[Report] <player> · <source>"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📡 Field report
+        Thanks for helping the HUD learn new hardware. One report per player + source is perfect.
+        What we know so far is in the wiki: **[Works with](https://github.com/ZRolesLabs/t8-hud/wiki/Works-With)**.
+  - type: input
+    id: player
+    attributes:
+      label: Player
+      placeholder: "Eversolo DMP-A8"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware
+      placeholder: "1.6.15"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - Local files
+        - TIDAL (in the player's app)
+        - TIDAL Connect
+        - Spotify Connect
+        - Qobuz (in the player's app)
+        - Qobuz Connect
+        - Roon Ready
+        - DLNA / UPnP
+        - AirPlay
+        - Bluetooth
+        - Squeeze Connect
+        - Amazon Music / Deezer / HIGHRESAUDIO
+        - Digital input (USB, optical, coax, HDMI ARC)
+        - Something else (say below)
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: How did the HUD do?
+      options:
+        - ✅ Everything looks right
+        - 🟡 Mostly right, some boxes wrong or N/A
+        - ❌ Nothing shows / wrong track
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: What looked right or wrong?
+      description: A photo of the HUD next to what the player's own app shows is gold.
+  - type: textarea
+    id: raw
+    attributes:
+      label: Raw data
+      description: Open `http://<HUD-address>:8080/api/raw` while the track plays and paste the text here.
+      render: json
+    validations:
+      required: true
