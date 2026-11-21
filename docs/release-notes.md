@@ -1,5 +1,9 @@
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="600">
 
+## 3.0.1
+
+- **New Google TV tile.** The T8 HUD banner on the TV home screen now follows the same ZRolesLabs tile design as our other TV apps: the ZRolesLabs flask on top and the app name in a cyan pill underneath, like our desktop icons. Nothing else changed.
+
 ## Lyrics
 
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/lyrics.png" alt="T8 HUD with lyrics" width="800">
