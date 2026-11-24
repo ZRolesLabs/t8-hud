@@ -46,6 +46,7 @@
     "beadSpeed": "normal",
     "showDac": false,
     "showClock": true,
+    "screensaverWhenIdle": true,
     "showFlask": false,
     "showLyrics": false,
     "lyricsOnline": false,

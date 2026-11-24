@@ -138,7 +138,7 @@ details.extras[open] > summary { margin-bottom: 14px; }
     <div class="pal" id="sizePick"></div>
     <div class="two" style="margin-top:14px">
       <label>Night mode after idle (minutes, 0 = never)<input type="number" id="night" min="0" max="600"></label>
-      <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label><label class="check"><input type="checkbox" id="flaskOn"> Sign it with the ZRolesLabs flask</label></div>
+      <div style="align-self:end"><label class="check"><input type="checkbox" id="clockOn"> Show the clock</label><label class="check"><input type="checkbox" id="ssOn"> Google TV app: let the TV's screensaver start when nothing is playing</label><label class="check"><input type="checkbox" id="flaskOn"> Sign it with the ZRolesLabs flask</label></div>
     </div>
   </section>
   <section>
@@ -223,6 +223,7 @@ async function load() {
   $('eqOn').onchange = eqUi; eqUi();
   $('night').value = st.display.nightAfterIdleMinutes ?? 10;
   $('clockOn').checked = st.display.showClock !== false;
+  $('ssOn').checked = st.display.screensaverWhenIdle !== false;
   $('flaskOn').checked = st.display.showFlask === true;
   $('lyOn').checked = st.display.showLyrics === true;
   $('lyOnline').checked = st.display.lyricsOnline === true;
@@ -427,7 +428,7 @@ $('find').onclick = async () => {
 };
 
 function formDisplay() {
-  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, showFlask: $('flaskOn').checked, showLyrics: $('lyOn').checked, lyricsOnline: $('lyOnline').checked, lyricsOffsetMs: Number($('lyOffset').value) || 0, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
+  return { palette, font, textSize, eqLabel: $('eqLabel').value.trim(), eqNote: $('eqNote').value.trim(), showEq: $('eqOn').checked, showClock: $('clockOn').checked, screensaverWhenIdle: $('ssOn').checked, showFlask: $('flaskOn').checked, showLyrics: $('lyOn').checked, lyricsOnline: $('lyOnline').checked, lyricsOffsetMs: Number($('lyOffset').value) || 0, customColor: $('custom').value, nightAfterIdleMinutes: Number($('night').value) || 0, showStats: $('stats').checked, showChain: $('chainOn').checked, showDac: $('dacOn').checked, animatePath: $('animOn').checked, beadShape: $('bShape').value, beadColor: $('bColor').value, beadSize: $('bSize').value, beadSpeed: $('bSpeed').value };
 }
 // Preview: the HUD with a sample track, drawn with what's on this page right now (saved or not)
 $('previewBtn').onclick = () => {

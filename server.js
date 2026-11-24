@@ -157,6 +157,7 @@ function cleanSettings(b) {
     if ('eqNote' in d) out.display.eqNote = str(d.eqNote);
     if ('showEq' in d) out.display.showEq = !!d.showEq;
     if ('showClock' in d) out.display.showClock = !!d.showClock;
+    if ('screensaverWhenIdle' in d) out.display.screensaverWhenIdle = !!d.screensaverWhenIdle;
     if ('showFlask' in d) out.display.showFlask = !!d.showFlask;
     if ('showLyrics' in d) out.display.showLyrics = !!d.showLyrics;
     if ('lyricsOnline' in d) out.display.lyricsOnline = !!d.lyricsOnline;
