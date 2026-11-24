@@ -1,5 +1,10 @@
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="600">
 
+## 3.0.2
+
+- **The TV's screensaver can start when the music stops.** The Google TV app used to hold the screen on for as long as it was open. Now it holds the screen on only while music is playing. Paused or idle, your TV's own screensaver starts after its usual wait, and any button on the remote brings the HUD back. Prefer the HUD to stay up no matter what? Untick **let the TV's screensaver start when nothing is playing** on the setup page.
+- **A new tile.** The flask on the Google TV tile is now shaped like a valve, with a level meter for the liquid.
+
 ## 3.0.1
 
 - **New Google TV tile.** The T8 HUD banner on the TV home screen now follows the same ZRolesLabs tile design as our other TV apps: the ZRolesLabs flask on top and the app name in a cyan pill underneath, like our desktop icons. Nothing else changed.

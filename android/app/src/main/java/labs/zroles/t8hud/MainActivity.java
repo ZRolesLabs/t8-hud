@@ -10,7 +10,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -20,7 +19,8 @@ import android.webkit.WebViewClient;
 
 /**
  * Full-screen HUD. Any remote key on the HUD opens a small menu (Settings · Lyrics · About · Exit); Menu goes
- * straight to setup. On setup, Back returns to the HUD; Back on the HUD (menu closed) closes the app. The screen stays on while the app is open.
+ * straight to setup. On setup, Back returns to the HUD; Back on the HUD (menu closed) closes the app. The screen is held on while music
+ * plays; paused or idle, the TV's own screensaver may start (setup page: "let the TV's screensaver start", on by default).
  */
 public final class MainActivity extends Activity {
     private static HudServer server; // one per process, survives the activity being recreated
@@ -30,10 +30,17 @@ public final class MainActivity extends Activity {
         @Override public void run() { if (server != null) server.updater.maybeCheck(); handler.postDelayed(this, 600_000); }
     };
 
+    /** The HUD page says whether music is playing (window.t8Busy). Only then is the screen held on. */
+    private final Runnable busyTick = new Runnable() {
+        @Override public void run() {
+            if (web != null) web.evaluateJavascript("window.t8Busy?1:0", v -> { if (web != null) web.setKeepScreenOn("1".equals(v)); });
+            handler.postDelayed(this, 10_000);
+        }
+    };
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (server == null) server = new HudServer(this);
         if (BuildConfig.VERSION_NAME.contains("dev")) WebView.setWebContentsDebuggingEnabled(true);
 
@@ -68,10 +75,14 @@ public final class MainActivity extends Activity {
                     + android.text.TextUtils.htmlEncode(String.valueOf(e.getMessage())) + "</body>", "text/html", "utf-8");
         }
         handler.post(updateTick);
+        handler.removeCallbacks(busyTick);
+        handler.post(busyTick);
     }
 
     @Override protected void onStop() {
         handler.removeCallbacks(updateTick);
+        handler.removeCallbacks(busyTick);
+        web.setKeepScreenOn(false);
         // nothing on screen, nothing to poll: the T8 is left alone while the app is in the background
         server.stop();
         super.onStop();

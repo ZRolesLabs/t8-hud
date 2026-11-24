@@ -88,6 +88,8 @@ function render() {
   applyPalette();
   const f = S.format, t = S.track;
   stage.classList.toggle('is-idle', S.state === 'idle' || !t);
+  // the Google TV app holds the screen on while this is true; paused or idle, the TV's own screensaver may start
+  window.t8Busy = S.state === 'playing' || cfg.display.screensaverWhenIdle === false;
   // cover + telemetry only (the default): give the cover the room the chain and stats would use
   stage.classList.toggle('minimal', !cfg.display.showChain && !cfg.display.showStats && !cfg.display.showDac);
   $('idle-s').textContent = S.source.external ? `External input · ${S.source.label || ''}` : (S.device.name || '');

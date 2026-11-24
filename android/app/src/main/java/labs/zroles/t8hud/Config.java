@@ -155,6 +155,7 @@ final class Config {
             if (d.has("eqNote")) o.put("eqNote", str(d.opt("eqNote")));
             if (d.has("showEq")) o.put("showEq", d.optBoolean("showEq"));
             if (d.has("showClock")) o.put("showClock", d.optBoolean("showClock"));
+            if (d.has("screensaverWhenIdle")) o.put("screensaverWhenIdle", d.optBoolean("screensaverWhenIdle"));
             if (d.has("showFlask")) o.put("showFlask", d.optBoolean("showFlask"));
             if (d.has("showLyrics")) o.put("showLyrics", d.optBoolean("showLyrics"));
             if (d.has("lyricsOnline")) o.put("lyricsOnline", d.optBoolean("lyricsOnline"));
