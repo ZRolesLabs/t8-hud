@@ -125,6 +125,12 @@ console.log('normalize: all checks passed');
   assert.strictEqual(flac.format.container, 'FLAC');
   assert.strictEqual(flac.format.kbps, 800);
   assert.strictEqual(flac.format.dlna.converted, false);
+  // the sender's cover link (upnp:albumArtURI) becomes the cover when the T8 gives none
+  const withArt = one(flacRes + '<upnp:albumArtURI dlna:profileID="JPEG_TN">http://192.168.1.50:8200/AlbumArt/7-22.jpg?a=1&amp;b=2</upnp:albumArtURI>');
+  const art = normalize(dlnaRaw, 0, withArt);
+  assert.deepStrictEqual(art.artRef, { kind: 'url', value: 'http://192.168.1.50:8200/AlbumArt/7-22.jpg?a=1&b=2' });
+  assert.ok(art.art && art.art.startsWith('/art/x'));
+  assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes)).art, null);
   // escaped twice by the sender: still read
   assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes, undefined, undefined, true)).format.container, 'FLAC');
   // no bitrate attribute: size / duration gives the average

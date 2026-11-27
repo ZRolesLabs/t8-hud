@@ -664,7 +664,10 @@ final class HudServer {
         byte[] buf = artCache.get(key);
         if (buf == null && kind != null && value != null && ID_KEY.matcher(key).matches()) {
             String raw = lastRaw == null ? "" : lastRaw;
-            boolean seen = raw.contains(value) || raw.contains(value.replace("/", "\\/"));
+            String dl = dlnaSoap == null ? "" : dlnaSoap;
+            boolean seen = raw.contains(value) || raw.contains(value.replace("/", "\\/"))
+                    // a DLNA cast's cover link comes from the T8 renderer's answer (XML-escaped once or twice)
+                    || (!dl.isEmpty() && (dl.contains(value) || dl.contains(value.replace("&", "&amp;")) || dl.contains(value.replace("&", "&amp;amp;"))));
             try {
                 if (kind.equals("id") && ID_KEY.matcher(value).matches())
                     buf = t8Get(host, "/ZidooMusicControl/v2/getImage?id=" + java.net.URLEncoder.encode(value, "UTF-8") + "&musicType=0&type=0&target=16", 8000);
