@@ -8,6 +8,7 @@ const path = require('path');
 const os = require('os');
 const net = require('net');
 const crypto = require('crypto');
+const dgram = require('dgram');
 const { normalize } = require('./lib/normalize');
 const lyrics = require('./lib/lyrics');
 const stats = require('./lib/stats');
@@ -221,6 +222,97 @@ function demoState() {
   return raw;
 }
 
+// ---------- DLNA: the T8's UPnP renderer knows what a DLNA cast arrived as ----------
+// getState has no container or bitrate for a DLNA cast (playType 7). The T8's renderer does: its
+// AVTransport GetPositionInfo returns the DIDL-Lite the sender handed over (lib/normalize.js reads
+// it). Read-only, asked only while a DLNA cast plays, and only ever of the T8 itself.
+const DLNA_GUESS_PORTS = [1848]; // where the T8 (Platinum renderer, fw 1.6.15) listens; SSDP finds it otherwise
+const dlna = { host: null, control: null, soap: null, key: '', at: 0, retryAt: 0, busy: false };
+function httpText(url, { method = 'GET', headers = {}, body = null, timeoutMs = 3000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, { method, agent: false, headers: { Connection: 'close', ...headers } }, res => {
+      const chunks = []; let size = 0;
+      res.on('data', c => { size += c.length; if (size > 512 * 1024) req.destroy(new Error('answer too big')); else chunks.push(c); });
+      res.on('end', () => res.statusCode === 200 ? resolve(Buffer.concat(chunks).toString('utf8')) : reject(new Error(`HTTP ${res.statusCode}`)));
+      res.on('error', reject);
+    });
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+    req.end(body || undefined);
+  });
+}
+// SSDP M-SEARCH, sent to the T8 directly and to the multicast group; only the T8's own answer counts
+function ssdpLocations(host, ms = 2500) {
+  return new Promise(resolve => {
+    const found = new Set();
+    let sock;
+    try { sock = dgram.createSocket({ type: 'udp4', reuseAddr: true }); } catch { return resolve([]); }
+    const done = () => { try { sock.close(); } catch {} resolve([...found]); };
+    sock.on('error', done);
+    sock.on('message', (msg, rinfo) => {
+      if (rinfo.address !== host) return;
+      const m = /^location:\s*(\S+)/im.exec(msg.toString('utf8'));
+      if (m && new URL(m[1]).hostname === host) found.add(m[1]);
+    });
+    const q = Buffer.from('M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: "ssdp:discover"\r\nMX: 2\r\nST: urn:schemas-upnp-org:service:AVTransport:1\r\n\r\n');
+    sock.bind(0, () => {
+      sock.send(q, 1900, host, () => {});
+      sock.send(q, 1900, '239.255.255.250', () => {});
+      setTimeout(done, ms);
+    });
+  });
+}
+function avTransportControl(descXml, base) {
+  for (const svc of descXml.match(/<service>[\s\S]*?<\/service>/gi) || []) {
+    if (!/<serviceType>\s*urn:schemas-upnp-org:service:AVTransport:\d/i.test(svc)) continue;
+    const m = /<controlURL>\s*([^<\s]+)\s*<\/controlURL>/i.exec(svc);
+    if (m) { const ub = /<URLBase>\s*([^<\s]+)\s*<\/URLBase>/i.exec(descXml); return new URL(m[1], ub ? ub[1] : base).href; }
+  }
+  return null;
+}
+async function findDlnaControl(host) {
+  const tried = new Set();
+  const tryLoc = async loc => {
+    if (tried.has(loc)) return null; tried.add(loc);
+    try { const u = avTransportControl(await httpText(loc, { timeoutMs: 2000 }), loc); return u && new URL(u).hostname === host ? u : null; } catch { return null; }
+  };
+  for (const port of DLNA_GUESS_PORTS) { const u = await tryLoc(`http://${host}:${port}/description.xml`); if (u) return u; }
+  for (const loc of await ssdpLocations(host)) { const u = await tryLoc(loc); if (u) return u; }
+  return null;
+}
+// returns what is known now and refreshes in the background, so a slow renderer never holds up the HUD
+function dlnaPositionInfo(raw) {
+  const info = (raw && raw.everSoloPlayInfo) || {};
+  const ain = info.everSoloPlayAudioInfo || {};
+  const isDlna = Number(raw && (raw.playType ?? info.playType)) === 7 || /dlna|upnp/i.test(info.playTypeSubtitle || '');
+  if (DEMO || !isDlna) { dlna.soap = null; dlna.key = ''; return null; }
+  const key = [ain.songName, ain.albumName, raw.duration].join('|');
+  const now = Date.now();
+  if (key !== dlna.key) { dlna.key = key; dlna.soap = null; dlna.at = 0; }
+  // the track's format won't change mid-track: ask on a new track, then now and then in case the first
+  // answer raced the track change
+  if (dlna.busy || now - dlna.at < 10000 || now < dlna.retryAt) return dlna.soap;
+  dlna.at = now; dlna.busy = true;
+  refreshDlna(key, now).finally(() => { dlna.busy = false; });
+  return dlna.soap;
+}
+async function refreshDlna(key, now) {
+  try {
+    if (dlna.host !== t8Host) { dlna.host = t8Host; dlna.control = null; }
+    if (!dlna.control) dlna.control = await findDlnaControl(t8Host);
+    if (!dlna.control) throw new Error('no UPnP renderer found on the T8');
+    const soap = await httpText(dlna.control, {
+      method: 'POST', timeoutMs: 2500,
+      headers: { 'Content-Type': 'text/xml; charset="utf-8"', SOAPACTION: '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"' },
+      body: '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID></u:GetPositionInfo></s:Body></s:Envelope>',
+    });
+    if (dlna.key === key) dlna.soap = soap;
+  } catch (e) {
+    if (!dlna.retryAt || now - dlna.retryAt > 60000) console.warn(`[dlna] could not read the T8's DLNA track details: ${e.message} (container and bitrate stay "not reported")`);
+    dlna.control = null; dlna.retryAt = now + 30000;
+  }
+}
+
 // ---------- live state ----------
 let current = null;          // last normalized state
 let lastRaw = null;          // last getState exactly as the T8 sent it (for /api/raw)
@@ -236,7 +328,7 @@ async function poll() {
   try {
     const raw = DEMO ? demoState() : (await t8Get('/ZidooMusicControl/v2/getState')).json();
     lastRaw = raw;
-    current = normalize(raw);
+    current = normalize(raw, Date.now(), dlnaPositionInfo(raw));
     rememberArt(current);
     if (current.source && current.source.label) noteSource(current.source.label);
     failures = 0;
@@ -440,6 +532,8 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/state') return sendJSON(res, { link, state: current });
     // the T8's own answer, untouched: handy for bug reports ("open /api/raw while it plays, send me the text")
     if (p === '/api/raw') return sendJSON(res, lastRaw || {});
+    // during a DLNA cast: the T8 renderer's GetPositionInfo answer, untouched (empty otherwise)
+    if (p === '/api/dlna') { res.writeHead(200, { 'Content-Type': 'text/xml; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(dlna.soap || ''); }
     if (p === '/api/config') return sendJSON(res, publicConfig());
     if (p === '/api/settings' && req.method === 'GET') {
       return sendJSON(res, { t8Host, chain: cfg.chain, sources: cfg.sources || {}, device: cfg.device || {}, dacWindow: cfg.dacWindow || { title: '', items: [] }, display: cfg.display, seenSources: [...seenSources], lanUrls: lanUrls(), link, palettes: PALETTE_KEYS, demo: DEMO, labs: cfg.labs, version: require('./package.json').version });
