@@ -16,8 +16,8 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const getJSON = async u => { const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 
-  function toState(raw) {
-    const s = window.T8N.normalize(raw);
+  function toState(raw, dlna) {
+    const s = window.T8N.normalize(raw, Date.now(), dlna || null);
     // the app's server checks the reference against the T8's own answer before fetching it
     if (s.art && s.artRef) s.art += '?k=' + encodeURIComponent(s.artRef.kind) + '&v=' + encodeURIComponent(s.artRef.value);
     delete s.artRef;
@@ -132,7 +132,7 @@
             const r = await getJSON('/t8/state');
             this.emit('link', r.link);
             offlineText(r.link);
-            if (r.raw) { const st = toState(r.raw); this.emit('state', st); this.lyrics(st, r.raw); }
+            if (r.raw) { const st = toState(r.raw, r.dlna); this.emit('state', st); this.lyrics(st, r.raw); }
           }
           this.emit('hb', Date.now());
         } catch (e) {

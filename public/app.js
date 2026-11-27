@@ -109,7 +109,7 @@ function render() {
   // a value the T8 doesn't send: say so plainly instead of a bare dash
   const na = `<span class="na">N/A</span><span class="why">not reported${S.source.streaming && S.source.label ? ' by ' + esc(S.source.label) : ''}</span>`;
   $('badges').innerHTML = [
-    ['Container', f.container ? esc(f.container) : na, false],
+    ['Container', f.container ? esc(f.container) + (f.dlna && f.dlna.converted ? '<span class="why">converted by the DLNA sender</span>' : '') : na, false],
     ['Format', esc(fam), true],
     ['Sample rate', rateHTML(f.rateHz), true],
     ['Bit depth', f.bits ? f.bits + '<small>bit</small>' : '—', false],

@@ -83,3 +83,63 @@ assert.strictEqual(sp.format.container, null);
 assert.strictEqual(sp.format.kbps, null);
 assert.strictEqual(Math.round(sp.format.rawKbps), 1411);
 console.log('normalize: all checks passed');
+
+// ---------- DLNA: getState says only "PCM"; the T8 renderer's GetPositionInfo knows what was sent ----------
+{
+  const fs = require('fs');
+  const path = require('path');
+  const { dlnaTrack } = require('../lib/normalize');
+  const dlnaRaw = require('../samples/getState-dlna-windows-lpcm.json');
+  const winSoap = fs.readFileSync(path.join(__dirname, '../samples/upnp-positioninfo-windows-lpcm.xml'), 'utf8');
+
+  // without the renderer's answer: honest N/A, track from everSoloPlayAudioInfo (playingMusic is stale)
+  const bare = normalize(dlnaRaw, 0);
+  assert.strictEqual(bare.track.title, 'Demo Song');
+  assert.strictEqual(bare.source.label, 'DLNA');
+  assert.strictEqual(bare.format.container, null);
+  assert.strictEqual(bare.format.kbps, null);
+
+  // Windows "Cast to device" offers 4+ <res>; the T8 plays the LPCM transcode (TrackURI), not the FLAC
+  const t = dlnaTrack(winSoap);
+  assert.strictEqual(t.container, 'LPCM');
+  assert.strictEqual(t.mime, 'audio/l16;rate=44100;channels=2');
+  assert.strictEqual(t.kbps, 1411.2);
+  assert.strictEqual(t.converted, true);
+  assert.strictEqual(t.durationS, 98);
+  const win = normalize(dlnaRaw, 0, winSoap);
+  assert.strictEqual(win.format.container, 'LPCM');
+  assert.strictEqual(win.format.kbps, 1411.2);
+  assert.strictEqual(win.format.family, 'pcm');
+  assert.deepStrictEqual(win.format.dlna, { mime: 'audio/l16;rate=44100;channels=2', converted: true });
+
+  // a controller that sends the file as is (one <res>, FLAC): container and real average bitrate
+  const one = (res, uri = 'http://192.168.1.50:8200/MediaItems/22.flac', title = 'Demo Song', esc2 = false) => {
+    const e = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    let didl = `<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/"><item id="22"><dc:title>${e(title)}</dc:title>${res}</item></DIDL-Lite>`;
+    didl = e(didl);
+    if (esc2) didl = e(didl);
+    return `<s:Envelope><s:Body><u:GetPositionInfoResponse><TrackMetaData>${didl}</TrackMetaData><TrackURI>${e(uri)}</TrackURI></u:GetPositionInfoResponse></s:Body></s:Envelope>`;
+  };
+  const flacRes = '<res protocolInfo="http-get:*:audio/flac:*" size="24567890" duration="0:04:05.000" bitrate="100000" sampleFrequency="44100" bitsPerSample="16" nrAudioChannels="2">http://192.168.1.50:8200/MediaItems/22.flac</res>';
+  const flac = normalize(dlnaRaw, 0, one(flacRes));
+  assert.strictEqual(flac.format.container, 'FLAC');
+  assert.strictEqual(flac.format.kbps, 800);
+  assert.strictEqual(flac.format.dlna.converted, false);
+  // escaped twice by the sender: still read
+  assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes, undefined, undefined, true)).format.container, 'FLAC');
+  // no bitrate attribute: size / duration gives the average
+  const noRate = flacRes.replace(' bitrate="100000"', '');
+  assert.strictEqual(Math.round(normalize(dlnaRaw, 0, one(noRate)).format.kbps), 802);
+  // a sender that wrote bits per second instead of bytes: not shown 8x too high
+  assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes.replace('bitrate="100000"', 'bitrate="800000"'))).format.kbps, 800);
+  // an answer from just before a track change (other title) is ignored
+  assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes, undefined, 'Previous Song')).format.container, null);
+  // several <res> and none is the one playing: don't guess
+  assert.strictEqual(normalize(dlnaRaw, 0, one(flacRes + flacRes.replace('22.flac', '22.mp3'), 'http://elsewhere/x')).format.container, null);
+  // not a DLNA cast: the renderer's answer is never used
+  const local = normalize({ state: 3, playType: 5, playingMusic: { title: 'x', extension: 'flac', sampleRateNumber: '44100', bits: '16', channels: 2 } }, 0, one(flacRes));
+  assert.strictEqual(local.format.container, 'FLAC');
+  assert.strictEqual(local.format.dlna, undefined);
+  assert.strictEqual(dlnaTrack(''), null);
+  assert.strictEqual(dlnaTrack('<junk>'), null);
+}

@@ -13,6 +13,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -22,6 +24,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -68,6 +72,12 @@ final class HudServer {
     private volatile String host = "";
     private volatile String lastRaw = null;
     private volatile long lastRawAt = 0;
+    // DLNA: the T8 renderer's GetPositionInfo answer for the track being cast (see refreshDlna)
+    private volatile String dlnaSoap = null;
+    private volatile String dlnaKey = "";
+    private volatile String dlnaHost = null, dlnaControl = null;
+    private volatile long dlnaAt = 0, dlnaRetryAt = 0;
+    private volatile boolean dlnaBusy = false;
     private volatile JSONObject link = linkObj(false, "Connecting…");
     private int failures = 0;
     private long lastScan = 0;
@@ -139,6 +149,7 @@ final class HudServer {
                     failures = 0;
                     setLink(true, null);
                     noteSource(j.optJSONObject("everSoloPlayInfo"));
+                    dlnaCheck(j);
                 }
             } catch (Exception e) {
                 if (!host.isEmpty()) {
@@ -164,6 +175,122 @@ final class HudServer {
             List<String> all = new ArrayList<>(seenSources);
             config.writeUser(new JSONObject().put("seenSources", new JSONArray(all.subList(Math.max(0, all.size() - 50), all.size()))));
         } catch (Exception ignored) {}
+    }
+
+    // ---------------------------------------------------------------- DLNA
+    // getState has no container or bitrate for a DLNA cast (playType 7). The T8's UPnP renderer does:
+    // AVTransport GetPositionInfo returns the DIDL-Lite the sender handed over. The page reads it with
+    // lib/normalize.js (dlnaTrack), same as the PC bridge. Read-only, only while a DLNA cast plays.
+    private static final int[] DLNA_GUESS_PORTS = { 1848 }; // the T8's renderer on fw 1.6.15; SSDP finds it otherwise
+
+    private void dlnaCheck(JSONObject raw) {
+        JSONObject info = raw.optJSONObject("everSoloPlayInfo");
+        if (info == null) info = new JSONObject();
+        JSONObject ain = info.optJSONObject("everSoloPlayAudioInfo");
+        if (ain == null) ain = new JSONObject();
+        int playType = raw.has("playType") ? raw.optInt("playType", -1) : info.optInt("playType", -1);
+        boolean isDlna = playType == 7 || info.optString("playTypeSubtitle", "").toLowerCase(Locale.ROOT).matches(".*(dlna|upnp).*");
+        if (!isDlna) { dlnaSoap = null; dlnaKey = ""; return; }
+        String key = ain.optString("songName") + "|" + ain.optString("albumName") + "|" + raw.optString("duration");
+        long now = System.currentTimeMillis();
+        if (!key.equals(dlnaKey)) { dlnaKey = key; dlnaSoap = null; dlnaAt = 0; }
+        if (dlnaBusy || now - dlnaAt < 10000 || now < dlnaRetryAt) return;
+        dlnaAt = now; dlnaBusy = true;
+        final String k = key, h = host;
+        Thread t = new Thread(() -> { try { refreshDlna(k, h, now); } finally { dlnaBusy = false; } }, "hud-dlna");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void refreshDlna(String key, String h, long now) {
+        try {
+            if (!h.equals(dlnaHost)) { dlnaHost = h; dlnaControl = null; }
+            if (dlnaControl == null) dlnaControl = findDlnaControl(h);
+            if (dlnaControl == null) throw new IOException("no UPnP renderer found on the T8");
+            String body = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:GetPositionInfo xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID></u:GetPositionInfo></s:Body></s:Envelope>";
+            String soap = httpText(dlnaControl, body, 2500);
+            if (key.equals(dlnaKey)) dlnaSoap = soap;
+        } catch (Exception e) {
+            if (dlnaRetryAt == 0 || now - dlnaRetryAt > 60000) Log.w(TAG, "could not read the T8's DLNA track details: " + e.getMessage());
+            dlnaControl = null; dlnaRetryAt = now + 30000;
+        }
+    }
+
+    /** GET (body null) or SOAP POST GetPositionInfo; small answers only. */
+    private static String httpText(String url, String soapBody, int timeoutMs) throws IOException {
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        c.setConnectTimeout(Math.min(timeoutMs, 2000));
+        c.setReadTimeout(timeoutMs);
+        c.setUseCaches(false);
+        c.setRequestProperty("Connection", "close");
+        try {
+            if (soapBody != null) {
+                c.setRequestMethod("POST");
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "text/xml; charset=\"utf-8\"");
+                c.setRequestProperty("SOAPACTION", "\"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo\"");
+                try (OutputStream o = c.getOutputStream()) { o.write(soapBody.getBytes(StandardCharsets.UTF_8)); }
+            }
+            if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
+            byte[] b = Config.readAll(c.getInputStream());
+            if (b.length > 512 * 1024) throw new IOException("answer too big");
+            return new String(b, StandardCharsets.UTF_8);
+        } finally { c.disconnect(); }
+    }
+
+    private static final Pattern SERVICE = Pattern.compile("<service>([\\s\\S]*?)</service>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AVT = Pattern.compile("<serviceType>\\s*urn:schemas-upnp-org:service:AVTransport:\\d", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CONTROL = Pattern.compile("<controlURL>\\s*([^<\\s]+)\\s*</controlURL>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern URLBASE = Pattern.compile("<URLBase>\\s*([^<\\s]+)\\s*</URLBase>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern LOCATION = Pattern.compile("^location:\\s*(\\S+)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+
+    private String findDlnaControl(String h) {
+        List<String> guesses = new ArrayList<>();
+        for (int port : DLNA_GUESS_PORTS) guesses.add("http://" + h + ":" + port + "/description.xml");
+        String u = controlFrom(guesses, h);
+        return u != null ? u : controlFrom(ssdpLocations(h), h);
+    }
+
+    private static String controlFrom(List<String> locations, String h) {
+        for (String loc : locations) {
+            try {
+                String desc = httpText(loc, null, 2000);
+                Matcher sv = SERVICE.matcher(desc);
+                while (sv.find()) {
+                    if (!AVT.matcher(sv.group(1)).find()) continue;
+                    Matcher cm = CONTROL.matcher(sv.group(1));
+                    if (!cm.find()) continue;
+                    Matcher ub = URLBASE.matcher(desc);
+                    URL u = new URL(new URL(ub.find() ? ub.group(1) : loc), cm.group(1));
+                    if (u.getHost().equals(h)) return u.toString();
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    /** SSDP M-SEARCH to the T8 directly and to the group; only the T8's own answers count. */
+    private static List<String> ssdpLocations(String h) {
+        List<String> out = new ArrayList<>();
+        byte[] q = ("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\n"
+                + "ST: urn:schemas-upnp-org:service:AVTransport:1\r\n\r\n").getBytes(StandardCharsets.US_ASCII);
+        try (DatagramSocket sock = new DatagramSocket()) {
+            sock.setSoTimeout(500);
+            sock.send(new DatagramPacket(q, q.length, InetAddress.getByName(h), 1900));
+            sock.send(new DatagramPacket(q, q.length, InetAddress.getByName("239.255.255.250"), 1900));
+            long end = System.currentTimeMillis() + 2500;
+            byte[] buf = new byte[2048];
+            while (System.currentTimeMillis() < end) {
+                DatagramPacket p = new DatagramPacket(buf, buf.length);
+                try { sock.receive(p); } catch (java.net.SocketTimeoutException e) { continue; }
+                if (!p.getAddress().getHostAddress().equals(h)) continue;
+                Matcher m = LOCATION.matcher(new String(p.getData(), 0, p.getLength(), StandardCharsets.UTF_8));
+                if (m.find()) {
+                    try { if (new URL(m.group(1)).getHost().equals(h) && !out.contains(m.group(1))) out.add(m.group(1)); } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+        return out;
     }
 
     byte[] t8Get(String h, String pathAndQuery, int timeoutMs) throws IOException {
@@ -319,9 +446,11 @@ final class HudServer {
             case "/t8/state": {
                 JSONObject j = new JSONObject().put("link", link).put("rawAt", lastRawAt);
                 j.put("raw", lastRaw == null || !isConnected() ? JSONObject.NULL : new JSONObject(lastRaw));
+                j.put("dlna", dlnaSoap == null ? JSONObject.NULL : dlnaSoap);
                 json(out, j); return;
             }
             case "/api/raw": send(out, 200, "application/json", (lastRaw == null ? "{}" : lastRaw).getBytes(StandardCharsets.UTF_8), null); return;
+            case "/api/dlna": send(out, 200, "text/xml; charset=utf-8", (dlnaSoap == null ? "" : dlnaSoap).getBytes(StandardCharsets.UTF_8), "no-store"); return;
             case "/api/state": json(out, new JSONObject().put("link", link).put("state", JSONObject.NULL)); return;
             case "/api/config": json(out, publicConfig()); return;
             case "/api/settings":

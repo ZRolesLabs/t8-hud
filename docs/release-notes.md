@@ -1,5 +1,9 @@
 <img src="https://raw.githubusercontent.com/ZRolesLabs/t8-hud/main/docs/brand/zroleslabs-header.png" alt="T8 HUD by ZRolesLabs" width="600">
 
+## 3.1.0
+
+- **DLNA casts show their container and bitrate.** Cast to the T8 from BubbleUPnP, Symphonium, Windows "Cast to device" or any other DLNA app, and the Container and Bitrate boxes no longer say N/A. The T8's usual status leaves them out for DLNA, so the HUD now also asks the T8's own DLNA renderer what the track arrived as. It's a read-only question to your T8 and nothing else. If the sending app converted the track before sending it, the HUD says so: Windows, for example, sends a FLAC as plain LPCM, and the Container box then reads **LPCM · converted by the DLNA sender**. Thanks to the A8 Gen 2 owner who reported it.
+
 ## 3.0.2
 
 - **The TV's screensaver can start when the music stops.** The Google TV app used to hold the screen on for as long as it was open. Now it holds the screen on only while music is playing. Paused or idle, your TV's own screensaver starts after its usual wait, and any button on the remote brings the HUD back. Prefer the HUD to stay up no matter what? Untick **let the TV's screensaver start when nothing is playing** on the setup page.

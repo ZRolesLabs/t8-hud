@@ -17,7 +17,7 @@ Both show the same screen: cover art, track info, telemetry, a clock and (if you
 
 **Everything on screen is real.** It's either reported by the T8 or typed in by you. There are no fake level meters or invented specs.
 
-ZRolesLabs is NOT affiliated with Eversolo. App reads the same local HTTP API the Eversolo Control app uses (port 9529) and never sends a command to your player.
+ZRolesLabs is NOT affiliated with Eversolo. App reads the same local HTTP API the Eversolo Control app uses (port 9529) and never sends a command to your player. During a DLNA cast it also asks the T8's own DLNA renderer what format the track arrived in (a read-only status query; see **[What the T8 reports](#what-the-t8-does-and-doesnt-tell-us)**).
 
 ## Google TV app
 
@@ -92,7 +92,8 @@ There are no npm packages and no accounts, and the fonts are bundled. Out of the
 | TIDAL Connect | yes | TIDAL cover | rate, bit depth, channels, container. The T8 gives no bitrate, so that box shows N/A |
 | Spotify Connect | yes | Spotify cover | rate, bit depth, channels. The T8 only reports the decoded PCM, so container and bitrate show N/A |
 | Qobuz, HIGHRESAUDIO, Amazon Music, Deezer in the T8's own app | expected to work like in-app TIDAL (untested) | expected | expected |
-| Qobuz Connect, Roon Ready, DLNA/UPnP, Squeeze Connect | expected to work like TIDAL/Spotify Connect (untested) | when the T8 provides one | what the T8 reports |
+| DLNA/UPnP cast (BubbleUPnP, Symphonium, Windows "Cast to device", …) | yes | when the sender provides one | rate, bit depth, channels, plus container and bitrate from the T8's DLNA renderer. If the sending app converted the track first (Windows sends FLAC as plain LPCM), the HUD says so |
+| Qobuz Connect, Roon Ready, Squeeze Connect | expected to work like TIDAL/Spotify Connect (untested) | when the T8 provides one | what the T8 reports |
 | Bluetooth, AirPlay | untested: the author's T8 runs on SFP fibre with its Wi-Fi and Bluetooth radios switched off | when the T8 provides one | what the T8 reports |
 
 **N/A is on purpose.** When a box says **N/A · not reported by …**, the T8 simply doesn't send that value for the source. For example, with Spotify Connect the T8 only reports the decoded output (PCM 44.1/16), not whether Spotify sent Ogg or FLAC, or at what bitrate. The HUD won't fill the gap with a guess or with the decoded PCM rate dressed up as a stream bitrate. The line under the boxes still shows the real raw PCM figure.
@@ -374,7 +375,8 @@ From `getState` (firmware v1.6.15): track, artist, album, container, codec, samp
 - **The T8's own player** (`playType` 5: local files and in-app TIDAL/Qobuz): the track is in `playingMusic`. Local covers come from `getImage?id=<id>&musicType=0&type=0&target=16` as a 1500 × 1500 JPEG; streamed tracks carry their own `albumArt` link. The T8 labels in-app streaming as `LOCAL`, so the HUD reads the service from the stream's own fields (`streamId`, `streamUrl`).
 - **Connect sources** (`playType` 6, e.g. "Tidal connect", "Spotify connect"; AirPlay, Bluetooth): the live track is in `everSoloPlayInfo.everSoloPlayAudioInfo`, with the cover in `everSoloPlayInfo.icon`. `playingMusic` still holds the last in-app track, so the HUD ignores it.
 - **Lyrics:** `getState` carries `hasLyric`, which means lyrics are supported for the current source, not that this track has one. `getLyric?id=<id>&type=<type>&duration=<duration>&number=<track number>` (the values straight from `getState`, as the Eversolo app sends them) returns the lyric file itself as LRC text when the T8 holds one, and the T8's catch-all error (`{"status":805,…}`) when it doesn't. Connect sources have no library id, so the T8 has no lyric for them.
-- `/api/raw` on the HUD shows the T8's last answer exactly as sent.
+- **DLNA casts** (`playType` 7, "DLNA"): the track is in `everSoloPlayAudioInfo` like a Connect source, but `getState` only says `PCM` with bitrate 0. The T8's DLNA renderer (UPnP, port 1848 on firmware v1.6.15, found by SSDP otherwise) still holds what the sender handed over: AVTransport `GetPositionInfo` returns the track's DIDL-Lite, whose `<res>` gives the MIME type, bitrate, size and duration. The HUD asks it about every 10 seconds while a DLNA cast plays, uses only the `<res>` the T8 is actually playing, and says so when the sender marked it as converted (`DLNA.ORG_CI=1`).
+- `/api/raw` on the HUD shows the T8's last answer exactly as sent, and `/api/dlna` the DLNA renderer's last answer during a cast.
 
 It does **not** expose audio levels or which drive a file is on, so the HUD doesn't pretend to show them.
 
@@ -404,7 +406,7 @@ Open an issue: **[Report a bug, ask a question, or suggest an idea](https://gith
 
 ```
 npm test                 # checks the payload normaliser and the lyrics logic
-node test/fake-t8.js     # a stand-in T8 on port 19529 for testing (SAMPLE=tidal for TIDAL Connect, LYRICS=1 to serve a lyric)
+node test/fake-t8.js     # a stand-in T8 on port 19529 for testing (SAMPLE=tidal for TIDAL Connect, SAMPLE=dlna for a DLNA cast, LYRICS=1 to serve a lyric)
 node server.js --demo    # replay a recorded T8
 ```
 
